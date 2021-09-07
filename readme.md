@@ -1,4 +1,4 @@
-# Python Spectrogram Explorer
+# Python Audio Spectrogram Explorer
 
 ### What you can do with this program:
 
