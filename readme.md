@@ -1,5 +1,5 @@
+![pase_icon](screenshots/pase_icon.png)
 # Python Audio Spectrogram Explorer
-
 ### What you can do with this program:
 
 - Visualize .wav files as spectrograms
@@ -13,7 +13,7 @@
   ![s1](screenshots/s1.JPG)
 
 ## How to install and start the program:
-I have not yet compiled a standalone executable yet, so you will have to start the program using the python source code. To do so, install python 3 (ideally the latest Anaconda distribution) and download the file `python_audio_spectrogram_explorer.py`. Than open either the spyder IDE (or any other), open the downloaded python code and press the "run file" button (often a green play button). Now a graphical user interface (GUI) should open. 
+I have not yet compiled a standalone executable, so you will have to start the program using the python source code. To do so, install python 3 (ideally the latest Anaconda distribution) and download the file `python_audio_spectrogram_explorer.py`. Than open either the spyder IDE (or any other), open the downloaded python code and press the "run file" button (often a green play button). Now a graphical user interface (GUI) should open. 
 
 Or from the command line, navigate to the folder that contains `python_audio_spectrogram_explorer.py` and start the program with this command: `python python_audio_spectrogram_explorer.py`. 
 
