@@ -71,6 +71,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.fft_size.addItem('8192')        
         self.fft_size.addItem('16384')        
         self.fft_size.addItem('32768')        
+        self.fft_size.addItem('65536')    
+        self.fft_size.addItem('131072')    
         self.fft_size.setCurrentIndex(4)
         
         self.fft_overlap = QtWidgets.QLineEdit(self)
