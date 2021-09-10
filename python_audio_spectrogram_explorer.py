@@ -90,7 +90,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.playbackspeed.setCurrentIndex(1)
         
         
-        self.time=None
+        self.time= dt.datetime.now()
         self.f=None
         self.t=[-1,-1]
         self.Sxx=None
@@ -269,12 +269,20 @@ class MainWindow(QtWidgets.QMainWindow):
         def plot_next_spectro():
             
             if self.t_length.text()=='':
-                self.plotwindow_length= self.t[-1] 
-                self.plotwindow_startsecond=0
-                # new file    
-                self.filecounter=self.filecounter+1
-                read_wav()
-                plot_spectrogram()
+                
+                if self.filecounter>self.filenames.shape[0]:
+                    print('That was it')
+                    self.canvas.fig.clf() 
+                    self.canvas.axes = self.canvas.fig.add_subplot(111)
+                    self.canvas.axes.set_title('That was it')
+                    self.canvas.draw()
+                else:  
+                    self.plotwindow_length= self.t[-1] 
+                    self.plotwindow_startsecond=0
+                    # new file    
+                    self.filecounter=self.filecounter+1
+                    read_wav()
+                    plot_spectrogram()
                     
             else:    
                 self.plotwindow_length=float( self.t_length.text() )       

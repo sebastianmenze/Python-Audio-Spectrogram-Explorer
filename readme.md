@@ -25,14 +25,51 @@ This program uses PyQT5 as GUI framework and numpy, scipy, pandas and matplotlib
 
 To get started, you first have to decide if you want to use real time-stamps (year-month-day hour:minute:seconds) or not. For simply looking at the spectrograms and exploring your audio-files, you do not need the real time-stamps. But as soon as you want to annotate your data, the program needs to know when each .wav file started recording. The default is using real time-stamps. 
 
-Without timestamps:
+**Without timestamps:**
 - Delete the content of the field "filename key:"    
 - Press the "Open .wav files" button
 
-With timestamps:
+**With timestamps:**
 - The start date and time of each recoding should be contained in the .wav file name
 
-- Adjust the "filename key:" field so that the program recognizes the correct time-stamp. For example: `aural_%Y_%m_%d_%H_%M_%S.wav`. Where %Y is year, %m is month, %d is day and so on.    
+- Adjust the "filename key:" field so that the program recognizes the correct time-stamp. For example: `aural_%Y_%m_%d_%H_%M_%S.wav` or `%y%m%d_%H%M%S_AU_SO02.wav` Where %Y is year, %m is month, %d is day and so on.   Here is a list of the format strings:
+
+  | **Directive** | **Meaning**                                                  | **Example**              |
+  | ------------- | ------------------------------------------------------------ | ------------------------ |
+  | `%a`          | Abbreviated weekday name.                                    | Sun, Mon, ...            |
+  | `%A`          | Full weekday name.                                           | Sunday, Monday, ...      |
+  | `%w`          | Weekday as a decimal number.                                 | 0, 1, ..., 6             |
+  | `%d`          | Day of the month as a zero-padded decimal.                   | 01, 02, ..., 31          |
+  | `%-d`         | Day of the month as a decimal number.                        | 1, 2, ..., 30            |
+  | `%b`          | Abbreviated month name.                                      | Jan, Feb, ..., Dec       |
+  | `%B`          | Full month name.                                             | January, February, ...   |
+  | `%m`          | Month as a zero-padded decimal number.                       | 01, 02, ..., 12          |
+  | `%-m`         | Month as a decimal number.                                   | 1, 2, ..., 12            |
+  | `%y`          | Year without century as a zero-padded decimal number.        | 00, 01, ..., 99          |
+  | `%-y`         | Year without century as a decimal number.                    | 0, 1, ..., 99            |
+  | `%Y`          | Year with century as a decimal number.                       | 2013, 2019 etc.          |
+  | `%H`          | Hour (24-hour clock) as a zero-padded decimal number.        | 00, 01, ..., 23          |
+  | `%-H`         | Hour (24-hour clock) as a decimal number.                    | 0, 1, ..., 23            |
+  | `%I`          | Hour (12-hour clock) as a zero-padded decimal number.        | 01, 02, ..., 12          |
+  | `%-I`         | Hour (12-hour clock) as a decimal number.                    | 1, 2, ... 12             |
+  | `%p`          | Locale’s AM or PM.                                           | AM, PM                   |
+  | `%M`          | Minute as a zero-padded decimal number.                      | 00, 01, ..., 59          |
+  | `%-M`         | Minute as a decimal number.                                  | 0, 1, ..., 59            |
+  | `%S`          | Second as a zero-padded decimal number.                      | 00, 01, ..., 59          |
+  | `%-S`         | Second as a decimal number.                                  | 0, 1, ..., 59            |
+  | `%f`          | Microsecond as a decimal number, zero-padded on the left.    | 000000 - 999999          |
+  | `%z`          | UTC offset in the form +HHMM or -HHMM.                       |                          |
+  | `%Z`          | Time zone name.                                              |                          |
+  | `%j`          | Day of the year as a zero-padded decimal number.             | 001, 002, ..., 366       |
+  | `%-j`         | Day of the year as a decimal number.                         | 1, 2, ..., 366           |
+  | `%U`          | Week number of the year (Sunday as the first day of the week). All days in a new year preceding the first Sunday are considered to be in week 0. | 00, 01, ..., 53          |
+  | `%W`          | Week number of the year (Monday as the first day of the week). All days in a new year preceding the first Monday are considered to be in week 0. | 00, 01, ..., 53          |
+  | `%c`          | Locale’s appropriate date and time representation.           | Mon Sep 30 07:06:05 2013 |
+  | `%x`          | Locale’s appropriate date representation.                    | 09/30/13                 |
+  | `%X`          | Locale’s appropriate time representation.                    | 07:06:05                 |
+  | `%%`          | A literal '%' character.                                     | %                        |
+
+   
 
 - Press the "Open .wav files" button and select your .wav files.
 
