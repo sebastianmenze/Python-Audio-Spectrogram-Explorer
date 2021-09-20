@@ -215,7 +215,7 @@ class MainWindow(QtWidgets.QMainWindow):
                     tt= self.call_time - np.array(self.time).astype('datetime64[ns]')  
                     # print(tt)                           
                     # self.canvas.axes.plot(tt[ix]*1e-9, self.call_frec[ix],'xb')
-                    self.canvas.axes.plot(tt[ix].dt.seconds, self.call_frec[ix],'xb')
+                    self.canvas.axes.plot(tt[ix].dt.seconds + tt[ix].dt.microseconds/10**6 , self.call_frec[ix],'xb')
                     
                     x=tt[ix].dt.seconds.values
                     y=self.call_frec[ix].values
