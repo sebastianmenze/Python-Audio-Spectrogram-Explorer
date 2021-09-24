@@ -76,7 +76,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.fft_size.setCurrentIndex(4)
         
         self.fft_overlap = QtWidgets.QLineEdit(self)
-        self.fft_overlap.setText('0.8')
+        self.fft_overlap.setText('0.9')
  
         self.filename_timekey = QtWidgets.QLineEdit(self)
         self.filename_timekey.setText('aural_%Y_%m_%d_%H_%M_%S.wav')       
@@ -349,6 +349,14 @@ class MainWindow(QtWidgets.QMainWindow):
                     plot_spectrogram()
             else:
                 plot_spectrogram()
+         
+                
+         
+        def new_fft_size_selected():
+             read_wav()
+             plot_spectrogram()
+        self.fft_size.currentIndexChanged.connect(new_fft_size_selected)
+        
          
                         
         self.canvas.fig.canvas.mpl_connect('button_press_event', onclick)
