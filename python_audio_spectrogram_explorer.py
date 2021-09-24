@@ -75,6 +75,15 @@ class MainWindow(QtWidgets.QMainWindow):
         self.fft_size.addItem('131072')    
         self.fft_size.setCurrentIndex(4)
         
+        
+        self.colormap_plot = QtWidgets.QComboBox(self)
+        self.colormap_plot.addItem('plasma')        
+        self.colormap_plot.addItem('viridis')        
+        self.colormap_plot.addItem('inferno')        
+        self.colormap_plot.addItem('gist_gray')           
+        self.colormap_plot.addItem('gist_yarg')           
+        self.colormap_plot.setCurrentIndex(2)
+        
         self.fft_overlap = QtWidgets.QLineEdit(self)
         self.fft_overlap.setText('0.9')
  
@@ -176,7 +185,8 @@ class MainWindow(QtWidgets.QMainWindow):
             # print(plotsxx.shape)
   
             # img=self.canvas.axes.pcolormesh(self.t, self.f, 10*np.log10(self.Sxx) ,cmap='plasma')
-            img=self.canvas.axes.imshow( 10*np.log10(plotsxx) , aspect='auto',cmap='plasma',origin = 'lower',extent = [t1, t2, y1, y2])
+            colormap_plot=self.colormap_plot.currentText()
+            img=self.canvas.axes.imshow( 10*np.log10(plotsxx) , aspect='auto',cmap=colormap_plot,origin = 'lower',extent = [t1, t2, y1, y2])
           
             # img=self.canvas.axes.pcolormesh(self.t[ int(ix_time[0]):int(ix_time[-1])], self.f[int(ix_f[0]):int(ix_f[-1])], 10*np.log10(plotsxx) , shading='flat',cmap='plasma')
 
@@ -356,6 +366,10 @@ class MainWindow(QtWidgets.QMainWindow):
              read_wav()
              plot_spectrogram()
         self.fft_size.currentIndexChanged.connect(new_fft_size_selected)
+        def new_colormap_selected():
+             plot_spectrogram()
+        self.colormap_plot.currentIndexChanged.connect(new_colormap_selected)
+        
         
          
                         
@@ -526,6 +540,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.checkbox_logscale=QtWidgets.QCheckBox('log scale')
         self.checkbox_logscale.setChecked(True)
         top2_layout.addWidget(self.checkbox_logscale)
+        
+        top2_layout.addWidget(QtWidgets.QLabel('colormap:'))
+        top2_layout.addWidget( self.colormap_plot)        
+        
+        
         top2_layout.addWidget(QtWidgets.QLabel('Saturation [dB re 1 muPa]:'))
         top2_layout.addWidget(self.db_saturation)
         
