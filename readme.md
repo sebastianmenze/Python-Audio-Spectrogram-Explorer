@@ -17,7 +17,7 @@ You can either download a windows executable or start the progrom from python us
 https://drive.google.com/file/d/1XE56w1ke4hSAZs9u6aLq78sqtcmp9HRs/view?usp=sharing
 and find the file `python_audio_spectrogram_explorer.exe`. It needs to stay in the `python_audio_spectrogram_explorer` folder to work, but you can create a shortcut to you desktop for example.
 
-A platform independet way to start the program is run the source code direcly in python. To do so, install python 3, ideally the latest Anaconda distribution (https://www.anaconda.com/products/individual, and download the file `python_audio_spectrogram_explorer.py`. Than open either the spyder IDE (or any other), open the downloaded python code and press the "run file" button (often a green play button). Now a graphical user interface (GUI) should open. 
+A platform independet way to start the program is run the source code direcly in python. To do so install python 3, ideally the latest Anaconda distribution (https://www.anaconda.com/products/individual), and download the file `python_audio_spectrogram_explorer.py`. Than open either the spyder IDE (or any other), open the downloaded python code and press the "run file" button (often a green play button). Now a graphical user interface (GUI) should open. 
 
 Or from the command line, navigate to the folder that contains `python_audio_spectrogram_explorer.py` and start the program with this command: `python python_audio_spectrogram_explorer.py`. 
 
