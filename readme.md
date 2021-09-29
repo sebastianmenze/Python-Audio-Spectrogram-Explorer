@@ -13,9 +13,8 @@
   ![s1](screenshots/s1.JPG)
 
 ## How to install and start the program:
-You can either download a windows executable or start the progrom from python using the source code. To download the executable unpack this zipfile:
+You can either download an executable or start the progrom by using the python source code. The wndows executable is packed into this zipfile:
 https://drive.google.com/file/d/1XE56w1ke4hSAZs9u6aLq78sqtcmp9HRs/view?usp=sharing
-and find the file `python_audio_spectrogram_explorer.exe`. It needs to stay in the `python_audio_spectrogram_explorer` folder to work, but you can create a shortcut to you desktop for example.
 
 A platform independet way to start the program is run the source code direcly in python. To do so install python 3, ideally the latest Anaconda distribution (https://www.anaconda.com/products/individual), and download the file `python_audio_spectrogram_explorer.py`. Than open either the spyder IDE (or any other), open the downloaded python code and press the "run file" button (often a green play button). Now a graphical user interface (GUI) should open. 
 
@@ -86,9 +85,9 @@ To get started, you first have to decide if you want to use real time-stamps (ye
     - The length (x-axis) of each spectrogram in seconds. If the field is left empty the spectrogram will be the length of the entire .wav file. 
     - The FFT size determines the spectral resolution. The higher it is, the more detail you will see in the lower part of the spectrogram, with less detail in the upper part 
 - Press next spectrogram (The Shortkey for this is the right arrow button)
-- You can now navigate between the spectrograms using the "next/previous spectrogram" buttons or the left and right arrow keys. The time.stamp or filename of the current .wav file is displayed as title. 
+- You can now navigate between the spectrograms using the "next/previous spectrogram" buttons or the left and right arrow keys. The time-stamp or filename of the current .wav file is displayed as title. 
 - You can zoom and pan using the matplotlib toolbar, where you can also save the spectrogram as image file. 
-- Once you have reached the final spectrogram, the program will display "That was it"
+- Once you have reached the final spectrogram, the program will display a warning
 ### Play audio and adjust playback speed
 - Press the "Play/Stop" button or the spacebar to play the .wav file. This will play the sound currently visible in the spectrogram, also when zoomed in. 
 - To listen to sound below or above the human hearing range, adjust the playback speed and press the Play button again.   
