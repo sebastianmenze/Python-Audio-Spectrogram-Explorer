@@ -13,8 +13,7 @@
   ![s1](screenshots/s1.JPG)
 
 ## How to install and start the program:
-You can either download an executable or start the progrom by using the python source code. The wndows executable is packed into this zipfile:
-https://drive.google.com/file/d/1XE56w1ke4hSAZs9u6aLq78sqtcmp9HRs/view?usp=sharing
+You can either download an executable or start the progrom by using the python source code. The windows executable can be downloaded by saving this repository as .zip file on your computer.
 
 A platform independet way to start the program is run the source code direcly in python. To do so install python 3, ideally the latest Anaconda distribution (https://www.anaconda.com/products/individual), and download the file `python_audio_spectrogram_explorer.py`. Than open either the spyder IDE (or any other), open the downloaded python code and press the "run file" button (often a green play button). Now a graphical user interface (GUI) should open. 
 
