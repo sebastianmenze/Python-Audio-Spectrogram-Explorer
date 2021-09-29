@@ -135,8 +135,10 @@ class MainWindow(QtWidgets.QMainWindow):
                 # self.time= dt.datetime(1,1,1,0,0,0)
                 self.time= dt.datetime.now()
             else:     
-                self.time= dt.datetime.strptime( audiopath.split('/')[-1], self.filename_timekey.text() )
-
+                try:
+                    self.time= dt.datetime.strptime( audiopath.split('/')[-1], self.filename_timekey.text() )
+                except: 
+                    print('wrongfilename')
             self.fs, self.x = wav.read(audiopath)
             print('open new file: '+audiopath)
             
@@ -165,17 +167,28 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.plotwindow_startsecond=0
             else:    
                 self.plotwindow_length=float( self.t_length.text() )
-                
-           
+                if self.t[-1]<self.plotwindow_length:
+                    self.plotwindow_startsecond=0
+                    self.plotwindow_length=self.t[-1]
+                    
             y1=int(self.f_min.text())    
             y2=int(self.f_max.text())    
             t1=self.plotwindow_startsecond
             t2=self.plotwindow_startsecond+self.plotwindow_length
+            
+            # if self.t_length.text=='':
+            #     t2=self.t[-1]
+            # else:    
+            #     if self.t[-1]<float(self.t_length.text()):
+            #         t2=self.t[-1]
+            #     else:    
+            #         t2=self.plotwindow_startsecond+self.plotwindow_length
+                    
             # tt,ff=np.meshgrid(self.t,self.f)
             # ix_time=(tt>=self.plotwindow_startsecond) & (tt<(self.plotwindow_startsecond+self.plotwindow_length))
             # ix_f=(ff>=y1) & (ff<y2)
             # plotsxx=self.Sxx[ ix_f & ix_time]
-            ix_time=np.where( (self.t>=self.plotwindow_startsecond) & (self.t<(self.plotwindow_startsecond+self.plotwindow_length)) )[0]
+            ix_time=np.where( (self.t>=t1) & (self.t<t2 ))[0]
             ix_f=np.where((self.f>=y1) & (self.f<y2))[0]
             # print(ix_time.shape)
             # print(ix_f.shape)
@@ -242,7 +255,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 # self.canvas.axes.text(tt[ix]*1e-9, self.call_frec[ix],self.call_label[ix])
               
             self.canvas.axes.set_ylim([y1,y2])
-            self.canvas.axes.set_xlim([self.plotwindow_startsecond,self.plotwindow_startsecond+self.plotwindow_length])
+            self.canvas.axes.set_xlim([t1,t2])
                       
                 
             self.canvas.fig.tight_layout()
@@ -275,24 +288,28 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.call_label=self.call_label.head(-1)
 
                 plot_spectrogram()              
+        
+        def end_of_filelist_warning(): 
+            msg_listend = QtWidgets.QMessageBox()
+            msg_listend.setIcon(QtWidgets.QMessageBox.Information)
+            msg_listend.setText("End of file list reached!")
+            msg_listend.exec_()
 
         def plot_next_spectro():
-            
-            if self.t_length.text()=='':
-                
-                if self.filecounter>self.filenames.shape[0]:
+            print('old filecounter is: '+str(self.filecounter))
+           
+            if self.t_length.text()=='' or self.t[-1]<float(self.t_length.text()):
+                self.filecounter=self.filecounter+1
+                if self.filecounter>=self.filenames.shape[0]-1:
+                    self.filecounter=self.filenames.shape[0]-1
                     print('That was it')
-                    self.canvas.fig.clf() 
-                    self.canvas.axes = self.canvas.fig.add_subplot(111)
-                    self.canvas.axes.set_title('That was it')
-                    self.canvas.draw()
-                else:  
-                    self.plotwindow_length= self.t[-1] 
-                    self.plotwindow_startsecond=0
-                    # new file    
-                    self.filecounter=self.filecounter+1
-                    read_wav()
-                    plot_spectrogram()
+                    end_of_filelist_warning()  
+                self.plotwindow_length= self.t[-1] 
+                self.plotwindow_startsecond=0
+                # new file    
+                # self.filecounter=self.filecounter+1
+                read_wav()
+                plot_spectrogram()
                     
             else:    
                 self.plotwindow_length=float( self.t_length.text() )       
@@ -318,47 +335,64 @@ class MainWindow(QtWidgets.QMainWindow):
                     print('writing log: '+savename[:-4]+'_log.csv')
                 # new file    
                 self.filecounter=self.filecounter+1
-                
-                if self.filecounter>self.filenames.shape[0]:
+                if self.filecounter>=self.filenames.shape[0]-1:
+                    self.filecounter=self.filenames.shape[0]-1
                     print('That was it')
-                    self.canvas.fig.clf() 
-                    self.canvas.axes = self.canvas.fig.add_subplot(111)
-                    self.canvas.axes.set_title('That was it')
-                    self.canvas.draw()
-                else:      
-                    read_wav()
-                    self.plotwindow_startsecond=0
-                    plot_spectrogram()
+                    end_of_filelist_warning()  
+                read_wav()
+                self.plotwindow_startsecond=0
+                plot_spectrogram()
             else:
                 plot_spectrogram()
          
 
                     
         def plot_previous_spectro():
-            
-            if self.t_length.text()=='':
-                self.plotwindow_startsecond = -100
+            print('old filecounter is: '+str(self.filecounter))
+         
+            if self.t_length.text()=='' or self.t[-1]<float(self.t_length.text()):
+                self.filecounter=self.filecounter-1
+                if self.filecounter<0:
+                    self.filecounter=0
+                    print('That was it')
+                    end_of_filelist_warning()  
+                self.plotwindow_length= self.t[-1] 
+                self.plotwindow_startsecond=0
+                # new file    
+                # self.filecounter=self.filecounter+1
+                read_wav()
+                plot_spectrogram()
+                
             else:                
                 self.plotwindow_startsecond=self.plotwindow_startsecond -self.plotwindow_length
-                print( [self.plotwindow_startsecond,  self.t[-1] ] )
-            
-            if self.plotwindow_startsecond < 0: 
-                self.plotwindow_startsecond = self.t[-1] + self.plotwindow_startsecond                
-                # old file    
-                self.filecounter=self.filecounter-1
-                
-                if self.filecounter<0:
-                    print('That was it')
-                    self.canvas.fig.clf() 
-                    self.canvas.axes = self.canvas.fig.add_subplot(111)
-                    self.canvas.axes.set_title('That was it')
-                    self.canvas.draw()
-                else:      
+                print( [self.plotwindow_startsecond,  self.t[-1] ] )      
+                if self.plotwindow_startsecond < 0: 
+                    self.plotwindow_startsecond = self.t[-1] + self.plotwindow_startsecond                
+                    # old file    
+                    self.filecounter=self.filecounter-1
+                    if self.filecounter<0:
+                        self.filecounter=0
+                        print('That was it')
+                        end_of_filelist_warning()  
+                    
+                    # if self.filecounter<0:
+                    #     print('That was it')
+                    #     self.canvas.fig.clf() 
+                    #     self.canvas.axes = self.canvas.fig.add_subplot(111)
+                    #     self.canvas.axes.set_title('That was it')
+                    #     self.canvas.draw()                 
+                    # elif self.filecounter>=self.filenames.shape[0]-1:
+                    #     print('That was it')
+                    #     self.canvas.fig.clf() 
+                    #     self.canvas.axes = self.canvas.fig.add_subplot(111)
+                    #     self.canvas.axes.set_title('That was it')
+                    #     self.canvas.draw()
+   
                     read_wav()
                     # self.plotwindow_startsecond=0
                     plot_spectrogram()
-            else:
-                plot_spectrogram()
+                else:
+                    plot_spectrogram()
          
                 
          
@@ -388,10 +422,12 @@ class MainWindow(QtWidgets.QMainWindow):
         def func_savecsv():         
             options = QtWidgets.QFileDialog.Options()
             savename = QtWidgets.QFileDialog.getSaveFileName(self,"QFileDialog.getSaveFileName()", r"C:\Users\a5278\Documents\passive_acoustics\detector_delevopment\detector_validation_subset", "csv files (*.csv)",options=options)
-            calldata=pd.concat([ self.call_time , self.call_frec,self.call_label], axis=1)
-            calldata.columns=['Timestamp','Frequency','Label']
-            print(calldata)
-            calldata.to_csv(savename[0])         
+            print('location is:' + savename[0])
+            if len(savename[0])>0:
+                calldata=pd.concat([ self.call_time , self.call_frec,self.call_label], axis=1)
+                calldata.columns=['Timestamp','Frequency','Label']
+                print(calldata)
+                calldata.to_csv(savename[0])         
         button_save.clicked.connect(func_savecsv)
         
         button_quit=QtWidgets.QPushButton('Quit')
