@@ -4,7 +4,9 @@
 
 - Visualize .wav files as spectrograms
 
-- Navigate through the spectrograms and listen in (adjustable playback speeds)
+- Navigate through the spectrograms and listen in to selectd areas in the spectrogram (adjustable playback speeds)
+
+- Export selectd areas in the spectrogram as .wav files
 
 - Annotate the spectrograms with custom labels and log each annotation's time-stamp and frequency 
 
@@ -123,3 +125,6 @@ To get started, you first have to decide if you want to use real time-stamps (ye
 | 2    | 2016-04-09 19:28:21.889267 | 23.329589392071576 | FW_20_Hz  |
 
 - If you want to save you annotations separately, press the "Save annotation csv" button
+
+### Export selected areas of the spectrogram as wav files
+
