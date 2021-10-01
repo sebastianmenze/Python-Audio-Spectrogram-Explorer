@@ -1,5 +1,12 @@
 # -*- coding: utf-8 -*-
 """
+Created on Fri Oct  1 16:57:46 2021
+
+@author: Administrator
+"""
+
+# -*- coding: utf-8 -*-
+"""
 Created on Mon Sep  6 17:28:37 2021
 
 @author: Sebastian Menze, sebastian.menze@gmail.com
@@ -111,8 +118,8 @@ class MainWindow(QtWidgets.QMainWindow):
         def openfilefunc():
             self.filecounter=-1
             self.call_time=pd.Series(dtype='datetime64[ns]')
-            self.call_frec=pd.Series()            
-            self.call_label=pd.Series()            
+            self.call_frec=pd.Series(dtype='float')            
+            self.call_label=pd.Series(dtype='object')            
 
             options = QtWidgets.QFileDialog.Options()
             # options |= QtWidgets.QFileDialog.DontUseNativeDialog
@@ -151,7 +158,7 @@ class MainWindow(QtWidgets.QMainWindow):
             
             fft_size=int( self.fft_size.currentText() )
             fft_overlap=float(  self.fft_overlap.text() )
-            self.f, self.t, self.Sxx = signal.spectrogram(p, self.fs, window='hamming',nperseg=fft_size,noverlap=fft_size*fft_overlap)
+            self.f, self.t, self.Sxx = signal.spectrogram(p, self.fs, window='hamming',nperseg=fft_size,noverlap=int(fft_size*fft_overlap))
             # self.t=self.time +  pd.to_timedelta( t  , unit='s')           
             
         def plot_spectrogram():
@@ -506,34 +513,88 @@ class MainWindow(QtWidgets.QMainWindow):
         ####### play audio
         button_play_audio=QtWidgets.QPushButton('Play/Stop [spacebar]')
         def func_playaudio():
-            if not hasattr(self, "play_obj"):
-                new_rate = 32000          
-
-                t_limits=self.canvas.axes.get_xlim()
-                print(t_limits)
-                x_select=self.x[int(t_limits[0]*self.fs) : int(t_limits[1]*self.fs) ]          
-                number_of_samples = round(len(x_select) * (float(new_rate)/ float(self.playbackspeed.currentText())) / self.fs)
-                x_resampled = np.array(signal.resample(x_select, number_of_samples)).astype('int')            
-                wave_obj = sa.WaveObject(x_resampled, 1, 2, new_rate)
-                self.play_obj = wave_obj.play()   
-            else:    
-                if self.play_obj.is_playing():
-                    sa.stop_all()
-                else:    
+            if self.filecounter>=0:
+                if not hasattr(self, "play_obj"):
                     new_rate = 32000          
+    
                     t_limits=self.canvas.axes.get_xlim()
+                    f_limits=self.canvas.axes.get_ylim()
                     print(t_limits)
-                    x_select=self.x[int(t_limits[0]*self.fs) : int(t_limits[1]*self.fs) ]          
-                    # number_of_samples = round(len(x_select) * float(new_rate) / self.fs)
+                    x_select=self.x[int(t_limits[0]*self.fs) : int(t_limits[1]*self.fs) ]     
+                    
+                    sos=signal.butter(8, f_limits, 'bandpass', fs=self.fs, output='sos')
+                    x_select = signal.sosfilt(sos, x_select)
+                    
                     number_of_samples = round(len(x_select) * (float(new_rate)/ float(self.playbackspeed.currentText())) / self.fs)
-
                     x_resampled = np.array(signal.resample(x_select, number_of_samples)).astype('int')            
+                   
+                    #normalize sound level
+                    maximum_x=32767*0.8
+                    old_max=np.max(np.abs([x_resampled.min(),x_resampled.max()]))
+                    x_resampled=x_resampled * (maximum_x/old_max)
+                    x_resampled = x_resampled.astype(np.int16)
+
+                    print( [x_resampled.min(),x_resampled.max()]  )                   
                     wave_obj = sa.WaveObject(x_resampled, 1, 2, new_rate)
-                    self.play_obj = wave_obj.play()
+                    self.play_obj = wave_obj.play()   
+                else:    
+                    if self.play_obj.is_playing():
+                        sa.stop_all()
+                    else:    
+                        new_rate = 32000          
+                        t_limits=self.canvas.axes.get_xlim()
+                        f_limits=self.canvas.axes.get_ylim()
+
+                        print(t_limits)
+                        x_select=self.x[int(t_limits[0]*self.fs) : int(t_limits[1]*self.fs) ]    
+                        sos=signal.butter(8, f_limits, 'bandpass', fs=self.fs, output='sos')
+                        x_select = signal.sosfilt(sos, x_select)
+                    
+                        # number_of_samples = round(len(x_select) * float(new_rate) / self.fs)
+                        number_of_samples = round(len(x_select) * (float(new_rate)/ float(self.playbackspeed.currentText())) / self.fs)
+
+                        x_resampled = np.array(signal.resample(x_select, number_of_samples)).astype('int')            
+                         #normalize sound level
+                        maximum_x=32767*0.8
+                        old_max=np.max(np.abs([x_resampled.min(),x_resampled.max()]))
+                        x_resampled=x_resampled * (maximum_x/old_max)
+                        x_resampled = x_resampled.astype(np.int16)
+                        print( [x_resampled.min(),x_resampled.max()]  )
+                        wave_obj = sa.WaveObject(x_resampled, 1, 2, new_rate)
+                        self.play_obj = wave_obj.play()
             
         button_play_audio.clicked.connect(func_playaudio)        
-                 
-       
+        
+        button_save_audio=QtWidgets.QPushButton('Export selected audio')         
+        def func_saveaudio():
+            if self.filecounter>=0:
+                options = QtWidgets.QFileDialog.Options()
+                savename = QtWidgets.QFileDialog.getSaveFileName(self,"QFileDialog.getSaveFileName()", "wav files (*.wav)",options=options)
+                if len(savename[0])>0:     
+                    savename=savename[0]
+                    new_rate = 32000          
+    
+                    t_limits=self.canvas.axes.get_xlim()
+                    f_limits=self.canvas.axes.get_ylim()
+                    print(t_limits)
+                    x_select=self.x[int(t_limits[0]*self.fs) : int(t_limits[1]*self.fs) ]     
+                    
+                    sos=signal.butter(8, f_limits, 'bandpass', fs=self.fs, output='sos')
+                    x_select = signal.sosfilt(sos, x_select)
+                                       
+                    number_of_samples = round(len(x_select) * (float(new_rate)/ float(self.playbackspeed.currentText())) / self.fs)
+                    x_resampled = np.array(signal.resample(x_select, number_of_samples)).astype('int') 
+                                        #normalize sound level
+                    maximum_x=32767*0.8
+                    old_max=np.max(np.abs([x_resampled.min(),x_resampled.max()]))
+                    x_resampled=x_resampled * (maximum_x/old_max)
+                    x_resampled = x_resampled.astype(np.int16)
+                    
+                    if savename[:-4]!='.wav':
+                        savename=savename+'.wav'
+                    wav.write(savename, new_rate, x_resampled)
+        button_save_audio.clicked.connect(func_saveaudio)        
+          
         ######## layout
         outer_layout = QtWidgets.QVBoxLayout()
         
@@ -547,6 +608,8 @@ class MainWindow(QtWidgets.QMainWindow):
         top_layout.addWidget(button_play_audio)
         top_layout.addWidget(QtWidgets.QLabel('Playback speed:'))        
         top_layout.addWidget(self.playbackspeed)
+        top_layout.addWidget(button_save_audio)            
+       
 
 
         top_layout.addWidget(button_save)            
