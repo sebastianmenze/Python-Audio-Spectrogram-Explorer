@@ -34,6 +34,9 @@ import datetime as dt
 import time
 import os
 
+from matplotlib.widgets import RectangleSelector
+
+
 # from pydub import AudioSegment
 # from pydub.playback import play
 # import threading
@@ -55,7 +58,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def __init__(self, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
 
-        self.canvas =  MplCanvas(self, width=5, height=4, dpi=200)
+        self.canvas =  MplCanvas(self, width=5, height=4, dpi=150)
                 
         # self.call_time=pd.Series()
         # self.call_frec=pd.Series()
@@ -126,10 +129,23 @@ class MainWindow(QtWidgets.QMainWindow):
         
         openfilebutton=QtWidgets.QPushButton('Open .wav files')
         def openfilefunc():
-            self.filecounter=-1
-            self.call_time=pd.Series(dtype='datetime64[ns]')
-            self.call_frec=pd.Series(dtype='float')            
-            self.call_label=pd.Series(dtype='object')            
+            self.filecounter=-1         
+            self.annotation= pd.DataFrame({'t1': pd.Series(dtype='datetime64[ns]'),
+                   't2': pd.Series(dtype='datetime64[ns]'),
+                   'f1': pd.Series(dtype='float'),
+                   'f2': pd.Series(dtype='float'),
+                   'label': pd.Series(dtype='object')   })
+            
+            # self.annotation=pd.DataFrame(columns=['t1','t2','f1','f2','label'],dtype=[("t1", "datetime64[ns]"), ("t2", "datetime64[ns]"), ("f1", "float"), ("f2", "float"), ("label", "object")] )
+            
+            # annotation=pd.DataFrame(dtype=[("t1", "datetime64[ns]"), ("t2", "datetime64[ns]"), ("f1", "float"), ("f2", "float"), ("label", "object")] )
+
+            # ,dtype=('datetime64[ns]','datetime64[ns]','float','float','object'))
+            # self.call_t_1=pd.Series(dtype='datetime64[ns]')
+            # self.call_f_1=pd.Series(dtype='float')            
+            # self.call_t_2=pd.Series(dtype='datetime64[ns]')
+            # self.call_f_2=pd.Series(dtype='float') 
+            # self.call_label=pd.Series(dtype='object')            
 
             options = QtWidgets.QFileDialog.Options()
             # options |= QtWidgets.QFileDialog.DontUseNativeDialog
@@ -170,6 +186,42 @@ class MainWindow(QtWidgets.QMainWindow):
             fft_overlap=float(  self.fft_overlap.text() )
             self.f, self.t, self.Sxx = signal.spectrogram(p, self.fs, window='hamming',nperseg=fft_size,noverlap=int(fft_size*fft_overlap))
             # self.t=self.time +  pd.to_timedelta( t  , unit='s')           
+        
+        def plot_annotation_box(annotation_row):
+            print('row:')
+            # print(annotation_row.dtypes)
+            x1=annotation_row.iloc[0,0]
+            x2=annotation_row.iloc[0,1]
+            
+            xt=pd.Series([x1,x2])
+            print(xt)
+            print(xt.dtype)
+
+            # print(np.dtype(np.array(self.time).astype('datetime64[ns]') ))
+            tt=xt - np.array(self.time).astype('datetime64[ns]')  
+            xt=tt.dt.seconds + tt.dt.microseconds/10**6
+            x1=xt[0]
+            x2=xt[1]
+            
+            # tt=x1 - np.array(self.time).astype('datetime64[ns]')  
+            # x1=tt.dt.seconds + tt.dt.microseconds/10**6
+            # tt=x2 - np.array(self.time).astype('datetime64[ns]')  
+            # x2=tt.dt.seconds + tt.dt.microseconds/10**6
+   
+            y1=annotation_row.iloc[0,2]
+            y2=annotation_row.iloc[0,3]
+            c_label=annotation_row.iloc[0,4]
+            
+            line_x=[x2,x1,x1,x2,x2]
+            line_y=[y1,y1,y2,y2,y1]
+            
+            xmin=np.min([x1,x2])
+            ymax=np.max([y1,y2])
+            
+            self.canvas.axes.plot(line_x,line_y,'-b',linewidth=.75)
+            self.canvas.axes.text(xmin,ymax,c_label,size=5)
+              
+            
             
         def plot_spectrogram():
          if self.filecounter>=0:
@@ -256,64 +308,80 @@ class MainWindow(QtWidgets.QMainWindow):
             # print(self.time)        
             # print(self.call_time)
 
-       # plot annotations
-            if self.call_time.shape[0]>0:
-                # ix=self.call_time > (np.array(self.time).astype('datetime64[ns]')+pd.Timedelta(self.plotwindow_startsecond, unit="s") )  
-                ix=(self.call_time > (np.array(self.time).astype('datetime64[ns]')+pd.Timedelta(self.plotwindow_startsecond, unit="s") )  ) & (self.call_time < (np.array(self.time).astype('datetime64[ns]')+pd.Timedelta(self.plotwindow_startsecond+self.plotwindow_length, unit="s") )  )
-                
-                if np.sum(ix)>0:
-                    tt= self.call_time - np.array(self.time).astype('datetime64[ns]')  
-                    # print(tt)                           
-                    # self.canvas.axes.plot(tt[ix]*1e-9, self.call_frec[ix],'xb')
-                    self.canvas.axes.plot(tt[ix].dt.seconds + tt[ix].dt.microseconds/10**6 , self.call_frec[ix],'xb')
-                    
-                    x=tt[ix].dt.seconds.values
-                    y=self.call_frec[ix].values
-                    txt=self.call_label[ix].values
-                    print(x)
-                    print(txt)
-
-    
-                    for i in range(x.shape[0]):
-                        self.canvas.axes.text(x[i],y[i],txt[i],size=5)
-              
-    # plt.annotate(txt, (fpr_mat[i], tpr_mat[i]))
+        # plot annotations
+            if self.annotation.shape[0]>0:
+                 ix=(self.annotation['t1'] > (np.array(self.time).astype('datetime64[ns]')+pd.Timedelta(self.plotwindow_startsecond, unit="s") )  ) & (self.annotation['t1'] < (np.array(self.time).astype('datetime64[ns]')+pd.Timedelta(self.plotwindow_startsecond+self.plotwindow_length, unit="s") )  )          
+                 if np.sum(ix)>0:
+                     ix=np.where(ix)[0]
+                     print('ix is')
+                     print(ix)
+                     for ix_x in ix:
+                       a= pd.DataFrame([self.annotation.iloc[ix_x,:] ])
+                       print(a)
+                       plot_annotation_box(a)
+          
    
-                # self.canvas.axes.text(tt[ix]*1e-9, self.call_frec[ix],self.call_label[ix])
               
             self.canvas.axes.set_ylim([y1,y2])
             self.canvas.axes.set_xlim([t1,t2])
                       
                 
             self.canvas.fig.tight_layout()
+            toggle_selector.RS=RectangleSelector(self.canvas.axes, box_select_callback,
+                                       drawtype='box', useblit=False,
+                                       button=[1],  # disable middle button                                  
+                                       interactive=False,rectprops=dict(facecolor="blue", edgecolor="black", alpha=0.1, fill=True))
+
+
             self.canvas.draw()
+     
+        def box_select_callback(eclick, erelease):
+
+            x1, y1 = eclick.xdata, eclick.ydata
+            x2, y2 = erelease.xdata, erelease.ydata
+
+            x1 =self.time +  pd.to_timedelta( x1 , unit='s') 
+            x2 =self.time +  pd.to_timedelta( x2 , unit='s') 
+            
+            if self.bg.checkedId()==-1:
+                c_label=''
+            else:
+                c_label=eval( 'self.an_'+str(self.bg.checkedId())+'.text()' )
+            
+            # a=pd.DataFrame(columns=['t1','t2','f1','f2','label'])
+            # a.iloc[0,:]=np.array([x1,x2,y1,y2,c_label ])
+            a=pd.DataFrame({'t1': pd.Series(x1,dtype='datetime64[ns]'),
+                   't2': pd.Series(x2,dtype='datetime64[ns]'),
+                   'f1': pd.Series(y1,dtype='float'),
+                   'f2': pd.Series(y2,dtype='float'),
+                   'label': pd.Series(c_label,dtype='object')   })
+            
+            # a=pd.DataFrame(data=[ [x1,x2,y1,y2,c_label ] ],columns=['t1','t2','f1','f2','label'])
+            # print('a:')
+            # print(a.dtypes)
+            # self.annotation.append(a, ignore_index = True)
+            self.annotation=pd.concat([ self.annotation ,a ] , ignore_index = True)
+
+            # print(self.annotation.dtypes)  
+            plot_annotation_box(a)
+
+        def toggle_selector(event):
+            # toggle_selector.RS.set_active(True)
+            print('select')
+            # if event.key == 't':
+            #     if toggle_selector.RS.active:
+            #         print(' RectangleSelector deactivated.')
+            #         toggle_selector.RS.set_active(False)
+            #     else:
+            #         print(' RectangleSelector activated.')
+            #         toggle_selector.RS.set_active(True)
+        
+
 
         def onclick(event):
-            # print('%s click: button=%d, x=%d, y=%d, xdata=%f, ydata=%f' %
-            #       ('double' if event.dblclick else 'single', event.button,
-            #        event.x, event.y, event.xdata, event.ydata))
-            if event.dblclick:
-                # print(self.bg.checkedId())
-
-                clicktime=self.time +  pd.to_timedelta( event.xdata  , unit='s')                
-                self.call_time=self.call_time.append( pd.Series(clicktime) ,ignore_index=True )
-                self.call_frec=self.call_frec.append( pd.Series(event.ydata),ignore_index=True )    
-                if self.bg.checkedId()==-1:
-                    c_label=''
-                else:
-                    c_label=eval( 'self.an_'+str(self.bg.checkedId())+'.text()' )
-                # print(c_label)
-                self.call_label=self.call_label.append( pd.Series(c_label),ignore_index=True )    
-                # print(self.call_label)
-                # print( self.call_time) 
-                # self.call_time=self.call_time.astype('datetime64[ns]')
-                plot_spectrogram()              
-              
             if event.button==3:
-                self.call_time=self.call_time.head(-1)
-                self.call_frec=self.call_frec.head(-1)
-                self.call_label=self.call_label.head(-1)
-
+                self.annotation=self.annotation.head(-1)
+                # print(self.annotation)            
                 plot_spectrogram()              
         
         def end_of_filelist_warning(): 
@@ -349,14 +417,13 @@ class MainWindow(QtWidgets.QMainWindow):
                 #save log
                 if checkbox_log.isChecked():
                     
-                    tt= self.call_time - self.time             
+                    tt= self.annotation['t1'] - self.time             
                     t_in_seconds=np.array( tt.values*1e-9 ,dtype='float16')
                     reclength=np.array( self.t[-1] ,dtype='float16')
     
                     ix=(t_in_seconds>0) & (t_in_seconds<reclength)
-    
-                    calldata=pd.concat([ self.call_time[ix] , self.call_frec[ix],self.call_label[ix]], axis=1)
-                    calldata.columns=['Timestamp','Frequency','Label']
+                    
+                    calldata=self.annotation.iloc[ix,:]
                     print(calldata)
                     savename=self.filenames[self.filecounter]
                     calldata.to_csv(savename[:-4]+'_log.csv')                  
@@ -436,6 +503,9 @@ class MainWindow(QtWidgets.QMainWindow):
          
                         
         self.canvas.fig.canvas.mpl_connect('button_press_event', onclick)
+        # self.canvas.fig.canvas.mpl_connect('key_press_event', toggle_selector)
+
+
         
         # QtGui.QShortcut(QtCore.Qt.Key_Right, MainWindow, plot_next_spectro())
         # self.msgSc = QShortcut(QKeySequence(u"\u2192"), self)
@@ -452,10 +522,7 @@ class MainWindow(QtWidgets.QMainWindow):
             savename = QtWidgets.QFileDialog.getSaveFileName(self,"QFileDialog.getSaveFileName()", r"C:\Users\a5278\Documents\passive_acoustics\detector_delevopment\detector_validation_subset", "csv files (*.csv)",options=options)
             print('location is:' + savename[0])
             if len(savename[0])>0:
-                calldata=pd.concat([ self.call_time , self.call_frec,self.call_label], axis=1)
-                calldata.columns=['Timestamp','Frequency','Label']
-                print(calldata)
-                calldata.to_csv(savename[0])         
+                self.annotation.to_csv(savename[0])         
         button_save.clicked.connect(func_savecsv)
         
         button_quit=QtWidgets.QPushButton('Quit')
