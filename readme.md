@@ -4,7 +4,7 @@
 
 - Visualize .wav files as spectrograms
 
-- Navigate through the spectrograms and listen in to selectd areas in the spectrogram (adjustable playback speeds)
+- Navigate through the spectrograms and listen in to selected areas in the spectrogram (adjustable playback speeds)
 
 - Export selected areas in the spectrogram as .wav files
 
@@ -17,7 +17,7 @@
 ## How to install and start the program:
 You can either download an executable or start the program by using the python source code. The windows executable is included in the repository (You can download it as .zip file on your computer).
 
-A platform independet way to start the program is run the source code direcly in python. To do so install python 3, ideally the latest Anaconda distribution (https://www.anaconda.com/products/individual), and download the file `python_audio_spectrogram_explorer.py`. Than open either the spyder IDE (or any other), open the downloaded python code and press the "run file" button (often a green play button). Now a graphical user interface (GUI) should open. 
+A platform independent way to start the program is run the source code directly in python. To do so install python 3, ideally the latest Anaconda distribution (https://www.anaconda.com/products/individual), and download the file `python_audio_spectrogram_explorer.py`. Than open either the spyder IDE (or any other), open the downloaded python code and press the "run file" button (often a green play button). Now a graphical user interface (GUI) should open. 
 
 Or from the command line, navigate to the folder that contains `python_audio_spectrogram_explorer.py` and start the program with this command: `python python_audio_spectrogram_explorer.py`. 
 
@@ -72,7 +72,7 @@ To get started, you first have to decide if you want to use real time-stamps (ye
     - Linear or logarithmic (default) frequency scale 
     - The length (x-axis) of each spectrogram in seconds. If the field is left empty the spectrogram will be the length of the entire .wav file. 
     - The FFT size determines the spectral resolution. The higher it is, the more detail you will see in the lower part of the spectrogram, with less detail in the upper part 
-    - The minimim and maximum dB values for the spectrogram color, will be determined automatically if left empty
+    - The minimum and maximum dB values for the spectrogram color, will be determined automatically if left empty
     - The colormap from a dropdown menu
 - Press next spectrogram (The Shortkey for this is the right arrow button)
 - You can now navigate between the spectrograms using the "next/previous spectrogram" buttons or the left and right arrow keys. The time-stamp or filename of the current .wav file is displayed as title. 
@@ -84,10 +84,10 @@ Here is an example for the black and white colormap called "gist_yarg"
 
 ### Play audio and adjust playback speed, export the selected sound as .wav
 - Press the "Play/Stop" button or the spacebar to play the .wav file.
-- The programm will only play what is visible in the current spectrogram (Sound above and below the frequency limits is filtered out)
-- To listen to specific sounds, zoom in using the maginfing glass
+- The program will only play what is visible in the current spectrogram (Sound above and below the frequency limits is filtered out)
+- To listen to specific sounds, zoom in using the magnifying glass
 - To listen to sound below or above the human hearing range, adjust the playback speed and press the Play button again.   
-- To export the sound you selected as .wav file, press the "Export slected audio" button
+- To export the sound you selected as .wav file, press the "Export selected audio" button
 
 ### Automatically plot spectrograms of multiple .wav files 
 
@@ -112,7 +112,7 @@ Here is an example for the black and white colormap called "gist_yarg"
 
 - Once a new .wav file is opened, the annotations for the previous .wav file are saved as .csv file, for example  as "aural_2017_02_12_22_40_00_log.csv". If no annotations were set an empty table is saved. This indicates you have already screened this .wav file but found nothing to annotate. 
 
-- The "...._log.csv" files are formated like this:
+- The "...._log.csv" files are formated like this (t1,f1 and t2,f2 are the lower left and upper right of the annotation box):
 
 |      | t1       |   t2   |       f1       | f2          | Label             |
 | ---- | ------------------  | ---------------|------- | ----|--- |
@@ -123,6 +123,6 @@ Here is an example for the black and white colormap called "gist_yarg"
 
 ### Remove the background from spectrogram
 
-This feature can be useful to detect sounds hidden in background noise. It subtracts the average spectrum from the current spectrogram, so that the horizontal noise lines and slope in background noise dissapear. To active this function tigle the checkbox called "Remove backround".  For optimal use, test different dB minimum setting. Here is an example for the spectrogram shown above:
+This feature can be useful to detect sounds hidden in background noise. It subtracts the average spectrum from the current spectrogram, so that the horizontal noise lines and slope in background noise disappear. To active this function toggle the checkbox called "Remove background".  For optimal use, test different dB minimum setting. Here is an example for the spectrogram shown above:
   ![screenshots/s2](screenshots/s2.JPG)
 
