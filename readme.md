@@ -6,13 +6,13 @@
 
 - Navigate through the spectrograms and listen in to selectd areas in the spectrogram (adjustable playback speeds)
 
-- Export selectd areas in the spectrogram as .wav files
+- Export selected areas in the spectrogram as .wav files
 
-- Annotate the spectrograms with custom labels and log each annotation's time-stamp and frequency 
+- Annotate areas in the spectrograms with custom labels and log each annotation's time-stamp and frequency 
 
 - Export spectrograms as image files and automatically plot spectrograms for all selected files 
 
-  ![s1](screenshots/s1.JPG)
+  ![screenshots/s1](screenshots/s1.JPG)
 
 ## How to install and start the program:
 You can either download an executable or start the program by using the python source code. The windows executable is included in the repository (You can download it as .zip file on your computer).
@@ -61,23 +61,10 @@ To get started, you first have to decide if you want to use real time-stamps (ye
   | `%-M`         | Minute as a decimal number.                                  | 0, 1, ..., 59            |
   | `%S`          | Second as a zero-padded decimal number.                      | 00, 01, ..., 59          |
   | `%-S`         | Second as a decimal number.                                  | 0, 1, ..., 59            |
-  | `%f`          | Microsecond as a decimal number, zero-padded on the left.    | 000000 - 999999          |
-  | `%z`          | UTC offset in the form +HHMM or -HHMM.                       |                          |
-  | `%Z`          | Time zone name.                                              |                          |
   | `%j`          | Day of the year as a zero-padded decimal number.             | 001, 002, ..., 366       |
   | `%-j`         | Day of the year as a decimal number.                         | 1, 2, ..., 366           |
-  | `%U`          | Week number of the year (Sunday as the first day of the week). All days in a new year preceding the first Sunday are considered to be in week 0. | 00, 01, ..., 53          |
-  | `%W`          | Week number of the year (Monday as the first day of the week). All days in a new year preceding the first Monday are considered to be in week 0. | 00, 01, ..., 53          |
-  | `%c`          | Locale’s appropriate date and time representation.           | Mon Sep 30 07:06:05 2013 |
-  | `%x`          | Locale’s appropriate date representation.                    | 09/30/13                 |
-  | `%X`          | Locale’s appropriate time representation.                    | 07:06:05                 |
-  | `%%`          | A literal '%' character.                                     | %                        |
 
-   
-
-- Press the "Open .wav files" button and select your .wav files.
-
-![s2](screenshots/s2.JPG)
+- Press the "Open .wav files" button and select your .wav files with the dialogue.
 
 ### Plot and browse spectrograms from .wav files
 - Select the spectrogram setting of your choice:
@@ -85,13 +72,18 @@ To get started, you first have to decide if you want to use real time-stamps (ye
     - Linear or logarithmic (default) frequency scale 
     - The length (x-axis) of each spectrogram in seconds. If the field is left empty the spectrogram will be the length of the entire .wav file. 
     - The FFT size determines the spectral resolution. The higher it is, the more detail you will see in the lower part of the spectrogram, with less detail in the upper part 
+    - The minimim and maximum dB values for the spectrogram color, will be determined automatically if left empty
 - Press next spectrogram (The Shortkey for this is the right arrow button)
 - You can now navigate between the spectrograms using the "next/previous spectrogram" buttons or the left and right arrow keys. The time-stamp or filename of the current .wav file is displayed as title. 
-- You can zoom and pan using the matplotlib toolbar, where you can also save the spectrogram as image file. 
+- You can zoom and pan using the magnifying glass symbol in the matplotlib toolbar, where you can also save the spectrogram as image file. 
 - Once you have reached the final spectrogram, the program will display a warning
-### Play audio and adjust playback speed
-- Press the "Play/Stop" button or the spacebar to play the .wav file. This will play the sound currently visible in the spectrogram, also when zoomed in. 
+
+### Play audio and adjust playback speed, export the selected sound as .wav
+- Press the "Play/Stop" button or the spacebar to play the .wav file.
+- The programm will only play what is visible in the current spectrogram (Sound above and below the frequency limits is filtered out)
+- To listen to specific sounds, zoom in using the maginfing glass
 - To listen to sound below or above the human hearing range, adjust the playback speed and press the Play button again.   
+- To export the sound you selected as .wav file, press the "Export slected audio" button
 
 ### Automatically plot spectrograms of multiple .wav files 
 
@@ -110,7 +102,7 @@ To get started, you first have to decide if you want to use real time-stamps (ye
 
 - Now you can choose custom (or preset) labels for your annotations by changing the labels in the row "Annotation labels". If no label is selected (using the check-boxes) an empty string will be used as label. 
 
-- To set an annotation, double left-click at any location inside the spectrogram plot 
+- To set an annotation, left-click at any location inside the spectrogram plot and draw a rectangle over the region of interest
 
 - To remove the last annotation, click the right mouse button. 
 
@@ -118,13 +110,15 @@ To get started, you first have to decide if you want to use real time-stamps (ye
 
 - The "...._log.csv" files are formated like this:
 
-|      | Timestamp                  | Frequency          | Label     |
+|      | t1       |t2 |      f1     | f2          | Label     |
 | ---- | -------------------------- | ------------------ | --------- |
-| 0    | 2016-04-09 19:25:47.491291 | 17.313106985840445 | FW_20_Hz  |
-| 1    | 2016-05-10 17:36:13.940731 | 27.59109213794827  | BW_Z_call |
-| 2    | 2016-04-09 19:28:21.889267 | 23.329589392071576 | FW_20_Hz  |
+| 0    | 2016-04-09 19:25:47.49 |2016-04-09 19:25:49.49  | 17.313 | 20.546 | FW_20_Hz  |
+| 1    | 2016-05-10 17:36:13.94| 2016-05-10 17:38:13.94|27.59109  | 34.57| BW_Z_call |
 
-- If you want to save you annotations separately, press the "Save annotation csv" button
+- If you want to save your annotations separately, press the "Save annotation csv" button
 
-### Export selected areas of the spectrogram as wav files
+### Remove the background from spectrogram
+
+This feature can be useful to detect sounds hidden in background noise. It subtracts the average spectrum from the current spectrogram, so that the horizontal noise lines and slope in background noise dissapear. To active this function tigle the checkbox called "Remove backround".  For optimal use, test different dB minimum setting. Here is an example for the spectrogram shown above:
+  ![screenshots/s3](screenshots/s3.JPG)
 
