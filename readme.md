@@ -80,7 +80,7 @@ To get started, you first have to decide if you want to use real time-stamps (ye
 - Once you have reached the final spectrogram, the program will display a warning
 
 Here is an example for the black and white colormap called "gist_yarg"
- ![screenshots/s2](screenshots/s2.JPG)
+ ![screenshots/s3](screenshots/s3.JPG)
 
 ### Play audio and adjust playback speed, export the selected sound as .wav
 - Press the "Play/Stop" button or the spacebar to play the .wav file.
@@ -114,15 +114,15 @@ Here is an example for the black and white colormap called "gist_yarg"
 
 - The "...._log.csv" files are formated like this:
 
-|      | t1       |t2   |      f1       | f2          | Label     |
-| ---- | ------   | ----|-------------- | --     -----|-        - |
-| 0    | 2016-04-09 19:25:47.49 |2016-04-09 19:25:49.49  | 17.313 | 20.546 | FW_20_Hz  |
-| 1    | 2016-05-10 17:36:13.94 | 2016-05-10 17:38:13.94|27.59109  | 34.57| BW_Z_call |
+|      | t1       |t2   |      f1       | f2          | Label                            |
+| ---- | ------   | ----|-------------- | --     -----|--                                |
+| 0    | 2016-04-09 19:25:47.49 |2016-04-09 19:25:49.49  | 17.313 | 20.546   | FW_20_Hz  |
+| 1    | 2016-05-10 17:36:13.94 | 2016-05-10 17:38:13.94 | 27.59109  | 34.57 | BW_Z_call |
 
 - If you want to save your annotations separately, press the "Save annotation csv" button
 
 ### Remove the background from spectrogram
 
 This feature can be useful to detect sounds hidden in background noise. It subtracts the average spectrum from the current spectrogram, so that the horizontal noise lines and slope in background noise dissapear. To active this function tigle the checkbox called "Remove backround".  For optimal use, test different dB minimum setting. Here is an example for the spectrogram shown above:
-  ![screenshots/s3](screenshots/s3.JPG)
+  ![screenshots/s2](screenshots/s2.JPG)
 
