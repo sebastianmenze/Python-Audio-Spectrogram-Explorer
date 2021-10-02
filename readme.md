@@ -66,17 +66,21 @@ To get started, you first have to decide if you want to use real time-stamps (ye
 
 - Press the "Open .wav files" button and select your .wav files with the dialogue.
 
-### Plot and browse spectrograms from .wav files
+### Plot and browse spectrograms 
 - Select the spectrogram setting of your choice:
     - Minimum and maximum frequency (y-axis) as f_min and f_max
     - Linear or logarithmic (default) frequency scale 
     - The length (x-axis) of each spectrogram in seconds. If the field is left empty the spectrogram will be the length of the entire .wav file. 
     - The FFT size determines the spectral resolution. The higher it is, the more detail you will see in the lower part of the spectrogram, with less detail in the upper part 
     - The minimim and maximum dB values for the spectrogram color, will be determined automatically if left empty
+    - The colormap from a dropdown menu
 - Press next spectrogram (The Shortkey for this is the right arrow button)
 - You can now navigate between the spectrograms using the "next/previous spectrogram" buttons or the left and right arrow keys. The time-stamp or filename of the current .wav file is displayed as title. 
 - You can zoom and pan using the magnifying glass symbol in the matplotlib toolbar, where you can also save the spectrogram as image file. 
 - Once you have reached the final spectrogram, the program will display a warning
+
+Here is an example for the black and white colormap called "gist_yarg"
+ ![screenshots/s2](screenshots/s2.JPG)
 
 ### Play audio and adjust playback speed, export the selected sound as .wav
 - Press the "Play/Stop" button or the spacebar to play the .wav file.
@@ -110,10 +114,10 @@ To get started, you first have to decide if you want to use real time-stamps (ye
 
 - The "...._log.csv" files are formated like this:
 
-|      | t1       |t2 |      f1     | f2          | Label     |
-| ---- | -------------------------- | ------------------ | --------- |
+|      | t1       |t2   |      f1       | f2          | Label     |
+| ---- | ------   | ----|-------------- | --     -----|-        - |
 | 0    | 2016-04-09 19:25:47.49 |2016-04-09 19:25:49.49  | 17.313 | 20.546 | FW_20_Hz  |
-| 1    | 2016-05-10 17:36:13.94| 2016-05-10 17:38:13.94|27.59109  | 34.57| BW_Z_call |
+| 1    | 2016-05-10 17:36:13.94 | 2016-05-10 17:38:13.94|27.59109  | 34.57| BW_Z_call |
 
 - If you want to save your annotations separately, press the "Save annotation csv" button
 
