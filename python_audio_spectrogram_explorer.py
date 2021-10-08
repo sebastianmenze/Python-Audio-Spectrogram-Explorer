@@ -26,6 +26,10 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg, NavigationTool
 from matplotlib.figure import Figure
 
 import scipy.io.wavfile as wav
+
+import soundfile as sf
+
+
 from scipy import signal
 import numpy as np
 from matplotlib import pyplot as plt
@@ -127,7 +131,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.filecounter=-1
         self.filenames=np.array( [] )
         
-        openfilebutton=QtWidgets.QPushButton('Open .wav files')
+        openfilebutton=QtWidgets.QPushButton('Open files')
         def openfilefunc():
             self.filecounter=-1         
             self.annotation= pd.DataFrame({'t1': pd.Series(dtype='datetime64[ns]'),
@@ -149,7 +153,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
             options = QtWidgets.QFileDialog.Options()
             # options |= QtWidgets.QFileDialog.DontUseNativeDialog
-            self.filenames, _ = QtWidgets.QFileDialog.getOpenFileNames(self,"QFileDialog.getOpenFileNames()", r"C:\Users\a5278\Documents\passive_acoustics\detector_delevopment\detector_validation_subset","Wav Files (*.wav)", options=options)
+            self.filenames, _ = QtWidgets.QFileDialog.getOpenFileNames(self,"QFileDialog.getOpenFileNames()", r"C:\Users\a5278\Documents\passive_acoustics\detector_delevopment\detector_validation_subset","Audio Files (*.wav *.aif *.aiff *.aifc *.ogg *.flac)", options=options)
             self.filenames = np.array( self.filenames )
             print(self.filenames)
         openfilebutton.clicked.connect(openfilefunc)
@@ -172,9 +176,21 @@ class MainWindow(QtWidgets.QMainWindow):
                     self.time= dt.datetime.strptime( audiopath.split('/')[-1], self.filename_timekey.text() )
                 except: 
                     print('wrongfilename')
-            self.fs, self.x = wav.read(audiopath)
-            print('open new file: '+audiopath)
             
+            # if audiopath[-4:]=='.wav':
+                
+                
+            self.x,self.fs  =  sf.read(audiopath,dtype='int16')
+
+            # if audiopath[-4:]=='.aif' | audiopath[-4:]=='.aiff' | audiopath[-4:]=='.aifc':
+            #     obj = aifc.open(audiopath,'r')
+            #     self.fs, self.x = wav.read(audiopath)     
+            print('open new file: '+audiopath)
+            print('FS: '+str(self.fs) +' x: '+str(np.shape(self.x)))
+            if len(self.x.shape)>1:
+                if np.shape(self.x)[1]>1:
+                    self.x=self.x[:,0]
+
             # factor=60
             # x=signal.decimate(x,factor,ftype='fir')
             
@@ -242,6 +258,8 @@ class MainWindow(QtWidgets.QMainWindow):
                     
             y1=int(self.f_min.text())    
             y2=int(self.f_max.text())    
+            if y2>(self.fs/2):
+                y2=(self.fs/2)
             t1=self.plotwindow_startsecond
             t2=self.plotwindow_startsecond+self.plotwindow_length
             
@@ -572,11 +590,14 @@ class MainWindow(QtWidgets.QMainWindow):
                 for audiopath in self.filenames:
                                     
                     if self.filename_timekey.text()=='':
-                        self.time= dt.datetime(1,1,1,0,0,0)
-                    else:     
-                        self.time= dt.datetime.strptime( audiopath.split('/')[-1], self.filename_timekey.text() )
-        
-                    self.fs, self.x = wav.read(audiopath)
+                        self.time= dt.datetime.now()
+                    else:  
+                        try:
+                            self.time= dt.datetime.strptime( audiopath.split('/')[-1], self.filename_timekey.text() )
+                        except:
+                            self.time= dt.datetime.now()
+                            
+                    self.x,self.fs  =  sf.read(audiopath,dtype='int16')
                     print('open new file: '+audiopath)
                     
                     db_saturation=float( self.db_saturation.text() )
@@ -606,8 +627,12 @@ class MainWindow(QtWidgets.QMainWindow):
                     new_rate = 32000          
     
                     t_limits=self.canvas.axes.get_xlim()
-                    f_limits=self.canvas.axes.get_ylim()
+                    f_limits=list(self.canvas.axes.get_ylim())
+                    if f_limits[1]>=(self.fs/2):
+                        f_limits[1]= self.fs/2-10
                     print(t_limits)
+                    print(f_limits)
+
                     x_select=self.x[int(t_limits[0]*self.fs) : int(t_limits[1]*self.fs) ]     
                     
                     sos=signal.butter(8, f_limits, 'bandpass', fs=self.fs, output='sos')
@@ -631,9 +656,12 @@ class MainWindow(QtWidgets.QMainWindow):
                     else:    
                         new_rate = 32000          
                         t_limits=self.canvas.axes.get_xlim()
-                        f_limits=self.canvas.axes.get_ylim()
-
+                        f_limits=list(self.canvas.axes.get_ylim())
+                        if f_limits[1]>=(self.fs/2):
+                            f_limits[1]= self.fs/2-10
                         print(t_limits)
+                        print(f_limits)
+                    
                         x_select=self.x[int(t_limits[0]*self.fs) : int(t_limits[1]*self.fs) ]    
                         sos=signal.butter(8, f_limits, 'bandpass', fs=self.fs, output='sos')
                         x_select = signal.sosfilt(sos, x_select)
@@ -663,8 +691,11 @@ class MainWindow(QtWidgets.QMainWindow):
                     new_rate = 32000          
     
                     t_limits=self.canvas.axes.get_xlim()
-                    f_limits=self.canvas.axes.get_ylim()
+                    f_limits=list(self.canvas.axes.get_ylim())
+                    if f_limits[1]>=(self.fs/2):
+                        f_limits[1]= self.fs/2-10
                     print(t_limits)
+                    print(f_limits)
                     x_select=self.x[int(t_limits[0]*self.fs) : int(t_limits[1]*self.fs) ]     
                     
                     sos=signal.butter(8, f_limits, 'bandpass', fs=self.fs, output='sos')
