@@ -21,7 +21,7 @@ A platform independent way to start the program is run the source code directly 
 
 Or from the command line, navigate to the folder that contains `python_audio_spectrogram_explorer.py` and start the program with this command: `python python_audio_spectrogram_explorer.py`. 
 
-This program uses PyQT5 as GUI framework and numpy, scipy, pandas and matplotlib to manipulate and visualize the data. The module `simpleaudio` is used to playback sound. In case you are getting an error message due to a missing module, simply copy the module's name and install it using pip, for example `pip install simpleaudio`.
+This program uses PyQT5 as GUI framework and numpy, scipy, pandas and matplotlib to manipulate and visualize the data. The module `simpleaudio` is used to playback sound. In case you are getting an error message due to a missing module, simply copy the module's name and install it using pip, for example `pip install simpleaudio` and `pip install soundfile`.
 
 ## How to use it:
 
