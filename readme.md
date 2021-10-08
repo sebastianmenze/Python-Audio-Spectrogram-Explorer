@@ -2,7 +2,7 @@
 # Python Audio Spectrogram Explorer
 ### What you can do with this program:
 
-- Visualize .wav files as spectrograms
+- Visualize audio files as spectrograms
 
 - Navigate through the spectrograms and listen in to selected areas in the spectrogram (adjustable playback speeds)
 
@@ -26,6 +26,8 @@ This program uses PyQT5 as GUI framework and numpy, scipy, pandas and matplotlib
 ## How to use it:
 
 ### Open files with or without timestamps
+
+The currently supported audio file types are: .wav .aif .aiff .aifc .ogg .flac
 
 To get started, you first have to decide if you want to use real time-stamps (year-month-day hour:minute:seconds) or not. For simply looking at the spectrograms and exploring your audio-files, you do not need the real time-stamps. But as soon as you want to annotate your data, the program needs to know when each .wav file started recording. The default is using real time-stamps. 
 
