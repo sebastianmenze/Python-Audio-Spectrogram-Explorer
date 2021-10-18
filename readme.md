@@ -116,7 +116,7 @@ Here is an example for the black and white colormap called "gist_yarg"
 
 - Once a new .wav file is opened, the annotations for the previous .wav file are saved as .csv file, for example  as "aural_2017_02_12_22_40_00_log.csv". If no annotations were set an empty table is saved. This indicates you have already screened this .wav file but found nothing to annotate. 
 
-- The "...._log.csv" files are formated like this (t1,f1 and t2,f2 are the lower left and upper right of the annotation box):
+- The "...._log.csv" files are formated like this (t1,f1 and t2,f2 are the corners of the annotation box):
 
 |      | t1       |   t2   |       f1       | f2          | Label             |
 | ---- | ------------------  | ---------------|------- | ----|--- |
@@ -130,7 +130,7 @@ Here is an example for the black and white colormap called "gist_yarg"
 This feature can be useful to detect sounds hidden in background noise. It subtracts the average spectrum from the current spectrogram, so that the horizontal noise lines and slope in background noise disappear. To active this function toggle the checkbox called "Remove background".  For optimal use, test different dB minimum setting. Here is an example for the spectrogram shown above:
   ![screenshots/s2](screenshots/s2.JPG)
 
-### Draw shape and svae as csv file
+### Draw shape and export as csv file
 - Press the "Draw shape" button
 - now you can draw a line by adding points with a double left click and removing them with a right click
 - to save the shape and exit the drawing mode press ENTER
