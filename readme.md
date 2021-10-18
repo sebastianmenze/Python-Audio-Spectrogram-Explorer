@@ -12,6 +12,8 @@
 
 - Export spectrograms as image files and automatically plot spectrograms for all selected files 
 
+- Draw shapes of signals in the spectrogram and save them as csv files 
+
   ![screenshots/s1](screenshots/s1.JPG)
 
 ## How to install and start the program:
@@ -128,3 +130,10 @@ Here is an example for the black and white colormap called "gist_yarg"
 This feature can be useful to detect sounds hidden in background noise. It subtracts the average spectrum from the current spectrogram, so that the horizontal noise lines and slope in background noise disappear. To active this function toggle the checkbox called "Remove background".  For optimal use, test different dB minimum setting. Here is an example for the spectrogram shown above:
   ![screenshots/s2](screenshots/s2.JPG)
 
+### Draw shape and svae as csv file
+- Press the "Draw shape" button
+- now you can draw a line by adding points with a double left click and removing them with a right click
+- to save the shape and exit the drawing mode press ENTER
+- now you are back in the normal annotation mode
+
+  ![screenshots/s4](screenshots/s4.JPG)
