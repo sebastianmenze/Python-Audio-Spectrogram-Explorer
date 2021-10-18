@@ -125,7 +125,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.f=None
         self.t=[-1,-1]
         self.Sxx=None
-             
+        self.draw_x=pd.Series(dtype='float')
+        self.draw_y=pd.Series(dtype='float')
+        self.cid1=None
+        self.cid2=None
+        
         self.plotwindow_startsecond=0
         # self.plotwindow_length=120
         self.filecounter=-1
@@ -352,7 +356,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
 
             self.canvas.draw()
-     
+            self.cid1=self.canvas.fig.canvas.mpl_connect('button_press_event', onclick)
+    
         def box_select_callback(eclick, erelease):
 
             x1, y1 = eclick.xdata, eclick.ydata
@@ -520,7 +525,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.checkbox_logscale.stateChanged.connect(plot_spectrogram   )         
          
                         
-        self.canvas.fig.canvas.mpl_connect('button_press_event', onclick)
+        # self.canvas.fig.canvas.mpl_connect('button_press_event', onclick)
         # self.canvas.fig.canvas.mpl_connect('key_press_event', toggle_selector)
 
 
@@ -618,7 +623,148 @@ class MainWindow(QtWidgets.QMainWindow):
             
             
         button_plot_all_spectrograms.clicked.connect(plot_all_spectrograms)        
-       
+
+        button_draw_shape=QtWidgets.QPushButton('Draw shape')
+        def func_draw_shape_plot(): 
+               if self.filecounter>=0:
+                    self.canvas.fig.clf() 
+                    self.canvas.axes = self.canvas.fig.add_subplot(111)                    
+                    if self.t_length.text()=='':
+                        self.plotwindow_length= self.t[-1] 
+                        self.plotwindow_startsecond=0
+                    else:    
+                        self.plotwindow_length=float( self.t_length.text() )
+                        if self.t[-1]<self.plotwindow_length:
+                            self.plotwindow_startsecond=0
+                            self.plotwindow_length=self.t[-1]
+                            
+                    y1=int(self.f_min.text())    
+                    y2=int(self.f_max.text())    
+                    if y2>(self.fs/2):
+                        y2=(self.fs/2)
+                    t1=self.plotwindow_startsecond
+                    t2=self.plotwindow_startsecond+self.plotwindow_length
+                
+                    ix_time=np.where( (self.t>=t1) & (self.t<t2 ))[0]
+                    ix_f=np.where((self.f>=y1) & (self.f<y2))[0]
+
+                    plotsxx= self.Sxx[ int(ix_f[0]):int(ix_f[-1]),int(ix_time[0]):int(ix_time[-1]) ] 
+                    plotsxx_db=10*np.log10(plotsxx)
+                    
+                    if self.checkbox_background.isChecked():
+                       spec_mean=np.median(plotsxx_db,axis=1) 
+                       sxx_background=np.transpose(np.broadcast_to(spec_mean,np.transpose(plotsxx_db).shape))
+                       plotsxx_db = plotsxx_db - sxx_background
+                       plotsxx_db=plotsxx_db - np.min(plotsxx_db.flatten())
+          
+                    colormap_plot=self.colormap_plot.currentText()
+                    img=self.canvas.axes.imshow( plotsxx_db , aspect='auto',cmap=colormap_plot,origin = 'lower',extent = [t1, t2, y1, y2])
+                                        
+                    self.canvas.axes.set_ylabel('Frequency [Hz]')
+                    self.canvas.axes.set_xlabel('Time [sec]')
+                    if self.checkbox_logscale.isChecked():
+                        self.canvas.axes.set_yscale('log')
+                    else:
+                        self.canvas.axes.set_yscale('linear')        
+                        
+                    if self.filename_timekey.text()=='':
+                        audiopath=self.filenames[self.filecounter]
+                        self.canvas.axes.set_title(audiopath.split('/')[-1])
+                    else:     
+                        self.canvas.axes.set_title(self.time)
+        
+                    clims=img.get_clim()
+                    if (self.db_vmin.text()=='') & (self.db_vmax.text()!=''):
+                        img.set_clim([ clims[0] , float(self.db_vmax.text())] )
+                    if (self.db_vmin.text()!='') & (self.db_vmax.text()==''):
+                        img.set_clim([ float(self.db_vmin.text()) ,clims[1]] )
+                    if (self.db_vmin.text()!='') & (self.db_vmax.text()!=''):
+                        img.set_clim([ float(self.db_vmin.text()) ,float(self.db_vmax.text()) ] )        
+                        
+                    self.canvas.fig.colorbar(img,label='PSD [dB re $1 \ \mu Pa \ Hz^{-1}$]')
+                    
+                # plot annotations
+                    if self.annotation.shape[0]>0:
+                         ix=(self.annotation['t1'] > (np.array(self.time).astype('datetime64[ns]')+pd.Timedelta(self.plotwindow_startsecond, unit="s") )  ) & (self.annotation['t1'] < (np.array(self.time).astype('datetime64[ns]')+pd.Timedelta(self.plotwindow_startsecond+self.plotwindow_length, unit="s") )  )          
+                         if np.sum(ix)>0:
+                             ix=np.where(ix)[0]
+                             print('ix is')
+                             print(ix)
+                             for ix_x in ix:
+                               a= pd.DataFrame([self.annotation.iloc[ix_x,:] ])
+                               print(a)
+                               plot_annotation_box(a)
+                               
+                    if self.t_limits==None:           
+                        self.canvas.axes.set_ylim([y1,y2])
+                        self.canvas.axes.set_xlim([t1,t2])
+                    else:
+                      self.canvas.axes.set_ylim(self.f_limits)
+                      self.canvas.axes.set_xlim(self.t_limits)
+                 
+ 
+                                                  
+                    self.canvas.fig.tight_layout()
+                
+                    self.canvas.axes.plot(self.draw_x,self.draw_y,'.-g')
+  
+                    self.canvas.draw()    
+                    self.cid2=self.canvas.fig.canvas.mpl_connect('button_press_event', onclick_draw)
+                    
+        def onclick_draw(event):
+                # print('%s click: button=%d, x=%d, y=%d, xdata=%f, ydata=%f' %
+                #       ('double' if event.dblclick else 'single', event.button,
+                #        event.x, event.y, event.xdata, event.ydata))
+                if event.button==1 & event.dblclick:
+                    self.draw_x=self.draw_x.append( pd.Series(event.xdata) ,ignore_index=True )
+                    self.draw_y=self.draw_y.append( pd.Series(event.ydata) ,ignore_index=True )
+                    self.f_limits=self.canvas.axes.get_ylim()
+                    self.t_limits=self.canvas.axes.get_xlim()                              
+                    func_draw_shape_plot()              
+                  
+                if event.button==3:
+                    self.draw_x=self.draw_x.head(-1)
+                    self.draw_y=self.draw_y.head(-1)
+                    self.f_limits=self.canvas.axes.get_ylim()
+                    self.t_limits=self.canvas.axes.get_xlim()
+                    func_draw_shape_plot()              
+ 
+        def func_draw_shape_exit():
+            print('save shape' + str(self.draw_x.shape))
+            self.canvas.fig.canvas.mpl_disconnect(self.cid2)
+            plot_spectrogram()
+            print('back to boxes')
+            if self.draw_x.shape[0]>0:
+                options = QtWidgets.QFileDialog.Options()
+                savename = QtWidgets.QFileDialog.getSaveFileName(self,"QFileDialog.getSaveFileName()", "csv files (*.csv)",options=options)
+                if len(savename[0])>0:     
+                    if savename[:-4]!='.csv':
+                        savename=savename[0]+'.csv'
+                    # drawcsv=pd.concat([self.draw_x,self.draw_y],axis=1)
+                    drawcsv=pd.DataFrame(columns=['Time_in_s','Frequency_in_Hz'])
+                    drawcsv['Time_in_s']=self.draw_x
+                    drawcsv['Frequency_in_Hz']=self.draw_y
+                    drawcsv.to_csv(savename)   
+                    
+        self.drawexitm = QtWidgets.QShortcut(QtCore.Qt.Key_Return, self)
+        self.drawexitm.activated.connect(func_draw_shape_exit)  
+
+        def func_draw_shape():                  
+           msg = QtWidgets.QMessageBox()
+           msg.setIcon(QtWidgets.QMessageBox.Information)   
+           msg.setText("Add points with double left click.\nRemove latest point with single right click. \nExit draw mode and save CSV by pushing enter")
+           msg.setStandardButtons(QtWidgets.QMessageBox.Ok | QtWidgets.QMessageBox.Cancel)
+           returnValue = msg.exec()    
+           if returnValue == QtWidgets.QMessageBox.Ok:
+               print('drawing')  
+               self.draw_x=pd.Series(dtype='float')
+               self.draw_y=pd.Series(dtype='float')
+               self.f_limits=self.canvas.axes.get_ylim()
+               self.t_limits=self.canvas.axes.get_xlim()
+               self.canvas.fig.canvas.mpl_disconnect(self.cid1)
+               func_draw_shape_plot()                                                                           
+        button_draw_shape.clicked.connect(func_draw_shape)
+        
         ####### play audio
         button_play_audio=QtWidgets.QPushButton('Play/Stop [spacebar]')
         def func_playaudio():
@@ -728,8 +874,7 @@ class MainWindow(QtWidgets.QMainWindow):
         top_layout.addWidget(QtWidgets.QLabel('Playback speed:'))        
         top_layout.addWidget(self.playbackspeed)
         top_layout.addWidget(button_save_audio)            
-       
-
+        top_layout.addWidget(button_draw_shape)            
 
         top_layout.addWidget(button_save)            
         top_layout.addWidget(button_quit)
@@ -865,7 +1010,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.msgSc2 = QtWidgets.QShortcut(QtCore.Qt.Key_Left, self)
         self.msgSc2.activated.connect(plot_previous_spectro)        
         self.msgSc3 = QtWidgets.QShortcut(QtCore.Qt.Key_Space, self)
-        self.msgSc3.activated.connect(func_playaudio)                
+        self.msgSc3.activated.connect(func_playaudio)     
+            
         ####
         # layout = QtWidgets.QVBoxLayout()
         # layout.addWidget(openfilebutton)
