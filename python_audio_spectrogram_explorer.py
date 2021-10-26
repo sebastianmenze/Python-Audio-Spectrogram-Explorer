@@ -134,6 +134,8 @@ class MainWindow(QtWidgets.QMainWindow):
         # self.plotwindow_length=120
         self.filecounter=-1
         self.filenames=np.array( [] )
+        self.current_audiopath=None
+
         
         openfilebutton=QtWidgets.QPushButton('Open files')
         def openfilefunc():
@@ -165,7 +167,7 @@ class MainWindow(QtWidgets.QMainWindow):
         
         def read_wav():
           if self.filecounter>=0:        
-            audiopath=self.filenames[self.filecounter]
+            self.current_audiopath=self.filenames[self.filecounter]
             
             # if self.filename_timekey.text()=='':
             #     self.time= dt.datetime(1,1,1,0,0,0)
@@ -177,19 +179,19 @@ class MainWindow(QtWidgets.QMainWindow):
                 self.time= dt.datetime.now()
             else:     
                 try:
-                    self.time= dt.datetime.strptime( audiopath.split('/')[-1], self.filename_timekey.text() )
+                    self.time= dt.datetime.strptime( self.current_audiopath.split('/')[-1], self.filename_timekey.text() )
                 except: 
                     print('wrongfilename')
             
             # if audiopath[-4:]=='.wav':
                 
                 
-            self.x,self.fs  =  sf.read(audiopath,dtype='int16')
+            self.x,self.fs  =  sf.read(self.current_audiopath,dtype='int16')
 
             # if audiopath[-4:]=='.aif' | audiopath[-4:]=='.aiff' | audiopath[-4:]=='.aifc':
             #     obj = aifc.open(audiopath,'r')
             #     self.fs, self.x = wav.read(audiopath)     
-            print('open new file: '+audiopath)
+            print('open new file: '+self.current_audiopath)
             print('FS: '+str(self.fs) +' x: '+str(np.shape(self.x)))
             if len(self.x.shape)>1:
                 if np.shape(self.x)[1]>1:
@@ -311,8 +313,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
             
             if self.filename_timekey.text()=='':
-                audiopath=self.filenames[self.filecounter]
-                self.canvas.axes.set_title(audiopath.split('/')[-1])
+                # audiopath=self.filenames[self.filecounter]
+                self.canvas.axes.set_title(self.current_audiopath.split('/')[-1])
             else:     
                 self.canvas.axes.set_title(self.time)
 
@@ -366,6 +368,12 @@ class MainWindow(QtWidgets.QMainWindow):
             x1 =self.time +  pd.to_timedelta( x1 , unit='s') 
             x2 =self.time +  pd.to_timedelta( x2 , unit='s') 
             
+            # sort to increasing values
+            t1=np.min([x1,x2])
+            t2=np.max([x1,x2])
+            f1=np.min([y1,y2])
+            f2=np.max([y1,y2])
+            
             if self.bg.checkedId()==-1:
                 c_label=''
             else:
@@ -373,10 +381,10 @@ class MainWindow(QtWidgets.QMainWindow):
             
             # a=pd.DataFrame(columns=['t1','t2','f1','f2','label'])
             # a.iloc[0,:]=np.array([x1,x2,y1,y2,c_label ])
-            a=pd.DataFrame({'t1': pd.Series(x1,dtype='datetime64[ns]'),
-                   't2': pd.Series(x2,dtype='datetime64[ns]'),
-                   'f1': pd.Series(y1,dtype='float'),
-                   'f2': pd.Series(y2,dtype='float'),
+            a=pd.DataFrame({'t1': pd.Series(t1,dtype='datetime64[ns]'),
+                   't2': pd.Series(t2,dtype='datetime64[ns]'),
+                   'f1': pd.Series(f1,dtype='float'),
+                   'f2': pd.Series(f2,dtype='float'),
                    'label': pd.Series(c_label,dtype='object')   })
             
             # a=pd.DataFrame(data=[ [x1,x2,y1,y2,c_label ] ],columns=['t1','t2','f1','f2','label'])
@@ -448,7 +456,7 @@ class MainWindow(QtWidgets.QMainWindow):
                     
                     calldata=self.annotation.iloc[ix,:]
                     print(calldata)
-                    savename=self.filenames[self.filecounter]
+                    savename=self.current_audiopath
                     calldata.to_csv(savename[:-4]+'_log.csv')                  
                     print('writing log: '+savename[:-4]+'_log.csv')
                 # new file    
@@ -668,8 +676,7 @@ class MainWindow(QtWidgets.QMainWindow):
                         self.canvas.axes.set_yscale('linear')        
                         
                     if self.filename_timekey.text()=='':
-                        audiopath=self.filenames[self.filecounter]
-                        self.canvas.axes.set_title(audiopath.split('/')[-1])
+                        self.canvas.axes.set_title(self.current_audiopath.split('/')[-1])
                     else:     
                         self.canvas.axes.set_title(self.time)
         
