@@ -427,7 +427,7 @@ class MainWindow(QtWidgets.QMainWindow):
            
             if self.t_length.text()=='' or self.t[-1]<float(self.t_length.text()):
                 self.filecounter=self.filecounter+1
-                if self.filecounter>=self.filenames.shape[0]-1:
+                if self.filecounter>self.filenames.shape[0]-1:
                     self.filecounter=self.filenames.shape[0]-1
                     print('That was it')
                     end_of_filelist_warning()  
@@ -646,12 +646,12 @@ class MainWindow(QtWidgets.QMainWindow):
                             self.plotwindow_startsecond=0
                             self.plotwindow_length=self.t[-1]
                             
-                    y1=int(self.f_min.text())    
-                    y2=int(self.f_max.text())    
+                    y1=self.f_limits[0]    
+                    y2=self.f_limits[1] 
                     if y2>(self.fs/2):
                         y2=(self.fs/2)
-                    t1=self.plotwindow_startsecond
-                    t2=self.plotwindow_startsecond+self.plotwindow_length
+                    t1=self.t_limits[0]  
+                    t2=self.f_limits[1]  
                 
                     ix_time=np.where( (self.t>=t1) & (self.t<t2 ))[0]
                     ix_f=np.where((self.f>=y1) & (self.f<y2))[0]
@@ -727,7 +727,7 @@ class MainWindow(QtWidgets.QMainWindow):
                     self.draw_y=self.draw_y.append( pd.Series(event.ydata) ,ignore_index=True )
                     self.f_limits=self.canvas.axes.get_ylim()
                     self.t_limits=self.canvas.axes.get_xlim()                              
-                    func_draw_shape_plot()              
+                    func_draw_shape_plot()   
                   
                 if event.button==3:
                     self.draw_x=self.draw_x.head(-1)
