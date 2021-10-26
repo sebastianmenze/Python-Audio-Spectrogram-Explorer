@@ -646,12 +646,12 @@ class MainWindow(QtWidgets.QMainWindow):
                             self.plotwindow_startsecond=0
                             self.plotwindow_length=self.t[-1]
                             
-                    y1=self.f_limits[0]    
-                    y2=self.f_limits[1] 
+                    y1=int(self.f_min.text())    
+                    y2=int(self.f_max.text())    
                     if y2>(self.fs/2):
                         y2=(self.fs/2)
-                    t1=self.t_limits[0]  
-                    t2=self.f_limits[1]  
+                    t1=self.plotwindow_startsecond
+                    t2=self.plotwindow_startsecond+self.plotwindow_length
                 
                     ix_time=np.where( (self.t>=t1) & (self.t<t2 ))[0]
                     ix_f=np.where((self.f>=y1) & (self.f<y2))[0]
