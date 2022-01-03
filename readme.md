@@ -1,5 +1,5 @@
 ![pase_icon](screenshots/pase_icon.png)
-# Python Audio Spectrogram Explorer
+# Python Audio Spectrogram Explorer (PASE)
 ### What you can do with this program:
 
 - Visualize audio files as spectrograms
@@ -17,11 +17,9 @@
   ![screenshots/s1](screenshots/s1.JPG)
 
 ## How to install and start the program:
-You can either download an executable or start the program by using the python source code. The windows executable is included in the repository (You can download it as .zip file on your computer).
+You can either download an executable or start the program by using the python source code. The windows executable is included in this repository (You can download it as .zip file).
 
-A platform independent way to start the program is run the source code directly in python. To do so install python 3, ideally the latest Anaconda distribution (https://www.anaconda.com/products/individual), and download the file `python_audio_spectrogram_explorer.py`. Than open either the spyder IDE (or any other), open the downloaded python code and press the "run file" button (often a green play button). Now a graphical user interface (GUI) should open. 
-
-Or from the command line, navigate to the folder that contains `python_audio_spectrogram_explorer.py` and start the program with this command: `python python_audio_spectrogram_explorer.py`. 
+A platform independent way to start the program is run the source code directly in python. To download PASE use this command: `pip install pase`. Than open a python console and start PASE with these two commands: `import pase` and `pase.pase.start()`. 
 
 This program uses PyQT5 as GUI framework and numpy, scipy, pandas and matplotlib to manipulate and visualize the data. The module `simpleaudio` is used to playback sound. In case you are getting an error message due to a missing module, simply copy the module's name and install it using pip, for example `pip install simpleaudio` and `pip install soundfile`.
 
