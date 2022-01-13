@@ -135,12 +135,20 @@ This feature can be useful to detect sounds hidden in background noise. It subtr
 
 - now you can draw a line by adding points with a double left click and removing them with a right click
 
-- to save the shape and exit the drawing mode press ENTER
+- to save the shape as .csv file and exit the drawing mode press ENTER
 
 - now you are back in the normal annotation mode
 
   ![screenshots/s4](screenshots/s4.JPG)
   
+- the .csv file is structured as follows:
+
+|      | Time_in_s | Frequency_in_Hz |
+| ---- | --------- | --------------- |
+| 0    | 49.273229 | 171.060302      |
+| 1    | 49.224946 | 166.780047      |
+| 2    | 49.221929 | 147.346955      |
+
 ### Automatically detect signals using drawn shape templates
 
 You can now use the shapes.csv file from above, to automatically detect patterns that are very similar to your hand drawn template. The method is described in detail here: https://github.com/sebastianmenze/Marine-mammal-call-detection-using-spectrogram-shape-matching
