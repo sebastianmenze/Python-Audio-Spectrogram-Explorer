@@ -14,6 +14,8 @@
 
 - Draw shapes of signals in the spectrogram and save them as csv files 
 
+- Automatically detect signals using drawn shape templates
+
   ![screenshots/s1](screenshots/s1.JPG)
 
 ## How to install and start the program:
@@ -130,8 +132,29 @@ This feature can be useful to detect sounds hidden in background noise. It subtr
 
 ### Draw shape and export as csv file
 - Press the "Draw shape" button
+
 - now you can draw a line by adding points with a double left click and removing them with a right click
+
 - to save the shape and exit the drawing mode press ENTER
+
 - now you are back in the normal annotation mode
 
   ![screenshots/s4](screenshots/s4.JPG)
+  
+### Automatically detect signals using drawn shape templates
+
+You can now use the shapes.csv file from above, to automatically detect patterns that are very similar to your hand drawn template. The method is described in detail here: https://github.com/sebastianmenze/Marine-mammal-call-detection-using-spectrogram-shape-matching
+
+- To automatically detect calls based on a template press the "Automatic detection" button
+
+- load the template (.csv file) of your choice 
+
+- Select a signal-to-noise dB threshold, usually between 3 and 10 dB, depending on the strength of the signal and amount of noise 
+
+- The spectrogram will now display the bounding boxes of detected signals, with the score displayed in the upper left corners
+
+- You can export the automatic detections including some more metadata as .csv file using the "Export auto-detec" button
+
+![autodetect3](screenshots/autodetect3.JPG)
+
+![autodetect4](screenshots/autodetect4.JPG)
