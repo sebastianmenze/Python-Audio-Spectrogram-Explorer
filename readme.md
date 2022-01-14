@@ -174,6 +174,8 @@ You can now use the shapes.csv file from above, to automatically detect patterns
 
 - You can export the automatic detections including some more metadata as .csv file using the "Export auto-detec" button
 
+- To clear the automatic detections, press the "Automatic detection" button but than press "Cancel" instead of opening a template file
+
 ![autodetect3](screenshots/autodetect3.JPG)
 
 ![autodetect4](screenshots/autodetect4.JPG)
