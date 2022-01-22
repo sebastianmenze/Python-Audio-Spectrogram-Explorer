@@ -127,7 +127,7 @@ def start():
             self.playbackspeed.setCurrentIndex(1)
             
             
-            self.time= dt.datetime.now()
+            self.time= dt.datetime(2000,1,1,0,0,0)
             self.f=None
             self.t=[-1,-1]
             self.Sxx=None
@@ -418,8 +418,8 @@ def start():
                 #     self.time= dt.datetime.strptime( audiopath.split('/')[-1], self.filename_timekey.text() )
                
                 if self.filename_timekey.text()=='':
-                    # self.time= dt.datetime(1,1,1,0,0,0)
-                    self.time= dt.datetime.now()
+                    self.time= dt.datetime(2000,1,1,0,0,0)
+                    #self.time= dt.datetime.now()
                 else:     
                     try:
                         self.time= dt.datetime.strptime( self.current_audiopath.split('/')[-1], self.filename_timekey.text() )
@@ -873,12 +873,12 @@ def start():
                     for audiopath in self.filenames:
                                         
                         if self.filename_timekey.text()=='':
-                            self.time= dt.datetime.now()
+                            self.time= dt.datetime(2000,1,1,0,0,0)
                         else:  
                             try:
                                 self.time= dt.datetime.strptime( audiopath.split('/')[-1], self.filename_timekey.text() )
                             except:
-                                self.time= dt.datetime.now()
+                                self.time= dt.datetime(2000,1,1,0,0,0)
                                 
                         self.x,self.fs  =  sf.read(audiopath,dtype='int16')
                         print('open new file: '+audiopath)
