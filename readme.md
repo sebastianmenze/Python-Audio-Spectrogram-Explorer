@@ -162,18 +162,18 @@ This feature can be useful to detect sounds hidden in background noise. It subtr
 
 ### Automatically detect signals using drawn shape templates
 
-You can now use the shapes.csv file from above, to automatically detect patterns that are very similar to your hand drawn template. The method is described in detail here: https://github.com/sebastianmenze/Marine-mammal-call-detection-using-spectrogram-shape-matching
+You can now use the shapes.csv file from above, to automatically detect patterns that are very similar to your hand drawn template. I implemented two detection methods so far:
 
-- To automatically detect calls based on a template press the "Automatic detection" button
+**Shapematching** https://github.com/sebastianmenze/Marine-mammal-call-detection-using-spectrogram-shape-matching
 
-- load the template (.csv file) of your choice 
+and **Spectrogram correlation** https://github.com/sebastianmenze/Spectrogram-correlation-tutorial
 
-- Select a signal-to-noise dB threshold, usually between 3 and 10 dB, depending on the strength of the signal and amount of noise 
-
+- To automatically detect calls based on a template press either the "Shapematching"  or "Spectrogram correlation" button
+- load the template (.csv file) of your choice.  
+- For the Shapematching, select a signal-to-noise dB threshold, usually between 3 and 10 dB, depending on the strength of the signal and amount of noise 
+- For the Spectrogram correlation, choose a detection threshold (between 0 and 1)
 - The spectrogram will now display the bounding boxes of detected signals, with the score displayed in the upper left corners
-
 - You can export the automatic detections including some more metadata as .csv file using the "Export auto-detec" button
-
 - To clear the automatic detections, press the "Automatic detection" button but than press "Cancel" instead of opening a template file
 
 ![autodetect3](screenshots/autodetect3.JPG)

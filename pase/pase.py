@@ -48,7 +48,9 @@ def start():
     from matplotlib.path import Path
     from skimage.transform import rescale, resize, downscale_local_mean
 
-        
+    from scipy.signal import find_peaks
+    from skimage.feature import match_template
+     
 
 
 
@@ -346,7 +348,92 @@ def start():
                 self.detectiondf = df.copy()    
               
                    
-            def automatic_detector():
+            def automatic_detector_specgram_corr():
+                # open template
+                self.detectiondf=pd.DataFrame([])
+                
+                templatefile, ok1 = QtWidgets.QFileDialog.getOpenFileName(self,"QFileDialog.getOpenFileNames()", r"C:\Users","CSV file (*.csv)")
+                if ok1:
+                    template=pd.read_csv(templatefile)
+                    
+                    corrscore_threshold, ok = QtWidgets.QInputDialog.getDouble(self, 'Input Dialog',
+                                                    'Enter correlation threshold in (0-1):')
+                    if corrscore_threshold>1:
+                        corrscore_threshold=1
+                    if corrscore_threshold<0:
+                        corrscore_threshold=0
+                        
+                        # print(template)
+                    offset_f=10
+                    offset_t=0.5                  
+                    shape_f=template['Frequency_in_Hz'].values
+                    shape_t=template['Time_in_s'].values
+                    shape_t=shape_t-shape_t.min()
+                    
+                    f_lim=[ shape_f.min() - offset_f ,  shape_f.max() + offset_f ]
+                    k_length_seconds=shape_t.max()+offset_t*2
+
+                    # generate kernel  
+                    time_step=np.diff(self.t)[0]
+                    
+                    k_t=np.linspace(0,k_length_seconds,int(k_length_seconds/time_step) )
+                    ix_f=np.where((self.f>=f_lim[0]) & (self.f<=f_lim[1]))[0]
+                    k_f=self.f[ix_f[0]:ix_f[-1]]
+                    # k_f=np.linspace(f_lim[0],f_lim[1], int( (f_lim[1]-f_lim[0]) /f_step)  )
+                    
+                    kk_t,kk_f=np.meshgrid(k_t,k_f)   
+                    kernel_background_db=0
+                    kernel_signal_db=1
+                    kernel=np.ones( [ k_f.shape[0] ,k_t.shape[0] ] ) * kernel_background_db
+                    # find wich grid points are inside the shape
+                    x, y = kk_t.flatten(), kk_f.flatten()
+                    points = np.vstack((x,y)).T 
+                    p = Path(list(zip(shape_t, shape_f))) # make a polygon
+                    grid = p.contains_points(points)
+                    mask = grid.reshape(kk_t.shape) # now you have a mask with points inside a polygon  
+                    kernel[mask]=kernel_signal_db
+                    
+                    ix_f=np.where((self.f>=f_lim[0]) & (self.f<=f_lim[1]))[0]
+                    spectrog =10*np.log10( self.Sxx[ ix_f[0]:ix_f[-1],: ] )
+                
+                    result = match_template(spectrog, kernel)
+                    corr_score=result[0,:]
+                    t_score=np.linspace( self.t[int(kernel.shape[1]/2)] , self.t[-int(kernel.shape[1]/2)], corr_score.shape[0] )
+
+                    peaks_indices = find_peaks(corr_score, height=corrscore_threshold)[0]
+                 
+                    
+                    t1=np.empty(len(peaks_indices))
+                    t2=np.empty(len(peaks_indices))
+                    f1=np.empty(len(peaks_indices))
+                    f2=np.empty(len(peaks_indices))
+                    score=np.empty(len(peaks_indices))
+                    
+                    if len(peaks_indices)>0: 
+                        i=0
+                        t2_old=0
+                        for ixpeak in peaks_indices:     
+                            tstar=t_score[ixpeak] - k_length_seconds/2 - offset_t
+                            tend=t_score[ixpeak] + k_length_seconds/2 - offset_t
+                            if tstar>t2_old:
+                                t1[i]=tstar
+                                t2[i]=tend
+                                f1[i]=f_lim[0]+offset_f
+                                f2[i]=f_lim[1]-offset_f
+                                score[i]=corr_score[ixpeak]
+                                i=i+1
+                            t2_old=tend
+                        df=pd.DataFrame()
+                        df['t-1']=t1
+                        df['t-2']=t2
+                        df['f-1']=f1
+                        df['f-2']=f2
+                        df['score']=score
+                        
+                        self.detectiondf = df.copy()    
+                        plot_spectrogram()
+
+            def automatic_detector_shapematching():
                 # open template
                 self.detectiondf=pd.DataFrame([])
                 
@@ -373,7 +460,7 @@ def start():
                         # plot results
                         plot_spectrogram()
                         
-            def export_automatic_detector():
+            def export_automatic_detector_shapematching():
                 if self.detectiondf.shape[0]>0:
                     savename = QtWidgets.QFileDialog.getSaveFileName(self,"QFileDialog.getSaveFileName()", r"C:\Users", "csv files (*.csv)")
                     print('location is:' + savename[0])
@@ -1242,13 +1329,17 @@ def start():
             top3_layout.addWidget(self.an_7) 
             self.an_7.setText('')
 
-            button_autodetect=QtWidgets.QPushButton('Automatic detection')         
-            button_autodetect.clicked.connect(automatic_detector)        
-            top3_layout.addWidget(button_autodetect)            
-            
+            button_autodetect_shape=QtWidgets.QPushButton('Shapematching')         
+            button_autodetect_shape.clicked.connect(automatic_detector_shapematching)        
+            top3_layout.addWidget(button_autodetect_shape)            
+
+            button_autodetect_corr=QtWidgets.QPushButton('Spectrog. correlation')         
+            button_autodetect_corr.clicked.connect(automatic_detector_specgram_corr)        
+            top3_layout.addWidget(button_autodetect_corr)            
+                        
 
             button_saveautodetect=QtWidgets.QPushButton('Export auto-detec.')         
-            button_saveautodetect.clicked.connect(export_automatic_detector)        
+            button_saveautodetect.clicked.connect(export_automatic_detector_shapematching)        
             top3_layout.addWidget(button_saveautodetect)    
             
             
