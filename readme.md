@@ -170,12 +170,18 @@ and **Spectrogram correlation** https://github.com/sebastianmenze/Spectrogram-co
 
 - To automatically detect calls based on a template press either the "Shapematching"  or "Spectrogram correlation" button
 - load the template (.csv file) of your choice.  
-- For the Shapematching, select a signal-to-noise dB threshold, usually between 3 and 10 dB, depending on the strength of the signal and amount of noise 
-- For the Spectrogram correlation, choose a detection threshold (between 0 and 1)
+- For the shapematching, select a signal-to-noise dB threshold, usually between 3 and 10 dB, depending on the strength of the signal and amount of noise 
+- For the spectrogram correlation, choose a detection threshold (between 0 and 1)
 - The spectrogram will now display the bounding boxes of detected signals, with the score displayed in the upper left corners
 - You can export the automatic detections including some more metadata as .csv file using the "Export auto-detec" button
 - To clear the automatic detections, press the "Automatic detection" button but than press "Cancel" instead of opening a template file
 
+![autodetect4](screenshots/autodetect4.JPG)
+
+Example result for the shapematching:
+
 ![autodetect3](screenshots/autodetect3.JPG)
 
-![autodetect4](screenshots/autodetect4.JPG)
+Example result for the spectrogram correlation:
+
+![scorr1](screenshots/scorr1.jpeg)
