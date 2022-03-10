@@ -1,0 +1,5 @@
+cd C:\GitHub\pase_complile
+
+pyinstaller pase_compile.py --onefile --ico pase_icon.ico 
+
+# py pase_compile.py
