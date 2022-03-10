@@ -51,8 +51,9 @@ def start():
     from scipy.signal import find_peaks
     from skimage.feature import match_template
      
-
-
+    from moviepy.editor import VideoClip, AudioFileClip
+    from moviepy.video.io.bindings import mplfig_to_npimage
+    
 
 
 
@@ -66,7 +67,8 @@ def start():
 
 
     class MainWindow(QtWidgets.QMainWindow):
-
+        
+            
         def __init__(self, *args, **kwargs):
             super(MainWindow, self).__init__(*args, **kwargs)
 
@@ -109,14 +111,23 @@ def start():
             self.colormap_plot.addItem('gist_yarg')           
             self.colormap_plot.setCurrentIndex(2)
             
-            self.checkbox_logscale=QtWidgets.QCheckBox('log scale')
+            self.checkbox_logscale=QtWidgets.QCheckBox('Log. scale')
             self.checkbox_logscale.setChecked(True)
             self.checkbox_background=QtWidgets.QCheckBox('Remove background')
             self.checkbox_background.setChecked(False)
             
-            self.fft_overlap = QtWidgets.QLineEdit(self)
-            self.fft_overlap.setText('0.9')
-     
+            # self.fft_overlap = QtWidgets.QLineEdit(self)
+            # self.fft_overlap.setText('0.9')
+            
+            self.fft_overlap = QtWidgets.QComboBox(self)
+            self.fft_overlap.addItem('0.2')        
+            self.fft_overlap.addItem('0.5')        
+            self.fft_overlap.addItem('0.7')        
+            self.fft_overlap.addItem('0.9')  
+            self.fft_overlap.setCurrentIndex(3)
+         
+            
+            
             self.filename_timekey = QtWidgets.QLineEdit(self)
             self.filename_timekey.setText('aural_%Y_%m_%d_%H_%M_%S.wav')       
      
@@ -354,84 +365,317 @@ def start():
                 
                 templatefile, ok1 = QtWidgets.QFileDialog.getOpenFileName(self,"QFileDialog.getOpenFileNames()", r"C:\Users","CSV file (*.csv)")
                 if ok1:
-                    template=pd.read_csv(templatefile)
+                    template=pd.read_csv(templatefile,index_col=0)
                     
                     corrscore_threshold, ok = QtWidgets.QInputDialog.getDouble(self, 'Input Dialog',
-                                                    'Enter correlation threshold in (0-1):')
+                                                    'Enter correlation threshold in (0-1):',decimals=2)
                     if corrscore_threshold>1:
                         corrscore_threshold=1
                     if corrscore_threshold<0:
                         corrscore_threshold=0
                         
-                        # print(template)
-                    offset_f=10
-                    offset_t=0.5                  
-                    shape_f=template['Frequency_in_Hz'].values
-                    shape_t=template['Time_in_s'].values
-                    shape_t=shape_t-shape_t.min()
-                    
-                    f_lim=[ shape_f.min() - offset_f ,  shape_f.max() + offset_f ]
-                    k_length_seconds=shape_t.max()+offset_t*2
-
-                    # generate kernel  
-                    time_step=np.diff(self.t)[0]
-                    
-                    k_t=np.linspace(0,k_length_seconds,int(k_length_seconds/time_step) )
-                    ix_f=np.where((self.f>=f_lim[0]) & (self.f<=f_lim[1]))[0]
-                    k_f=self.f[ix_f[0]:ix_f[-1]]
-                    # k_f=np.linspace(f_lim[0],f_lim[1], int( (f_lim[1]-f_lim[0]) /f_step)  )
-                    
-                    kk_t,kk_f=np.meshgrid(k_t,k_f)   
-                    kernel_background_db=0
-                    kernel_signal_db=1
-                    kernel=np.ones( [ k_f.shape[0] ,k_t.shape[0] ] ) * kernel_background_db
-                    # find wich grid points are inside the shape
-                    x, y = kk_t.flatten(), kk_f.flatten()
-                    points = np.vstack((x,y)).T 
-                    p = Path(list(zip(shape_t, shape_f))) # make a polygon
-                    grid = p.contains_points(points)
-                    mask = grid.reshape(kk_t.shape) # now you have a mask with points inside a polygon  
-                    kernel[mask]=kernel_signal_db
-                    
-                    ix_f=np.where((self.f>=f_lim[0]) & (self.f<=f_lim[1]))[0]
-                    spectrog =10*np.log10( self.Sxx[ ix_f[0]:ix_f[-1],: ] )
-                
-                    result = match_template(spectrog, kernel)
-                    corr_score=result[0,:]
-                    t_score=np.linspace( self.t[int(kernel.shape[1]/2)] , self.t[-int(kernel.shape[1]/2)], corr_score.shape[0] )
-
-                    peaks_indices = find_peaks(corr_score, height=corrscore_threshold)[0]
-                 
-                    
-                    t1=np.empty(len(peaks_indices))
-                    t2=np.empty(len(peaks_indices))
-                    f1=np.empty(len(peaks_indices))
-                    f2=np.empty(len(peaks_indices))
-                    score=np.empty(len(peaks_indices))
-                    
-                    if len(peaks_indices)>0: 
-                        i=0
-                        t2_old=0
-                        for ixpeak in peaks_indices:     
-                            tstar=t_score[ixpeak] - k_length_seconds/2 - offset_t
-                            tend=t_score[ixpeak] + k_length_seconds/2 - offset_t
-                            if tstar>t2_old:
-                                t1[i]=tstar
-                                t2[i]=tend
-                                f1[i]=f_lim[0]+offset_f
-                                f2[i]=f_lim[1]-offset_f
-                                score[i]=corr_score[ixpeak]
-                                i=i+1
-                            t2_old=tend
-                        df=pd.DataFrame()
-                        df['t-1']=t1
-                        df['t-2']=t2
-                        df['f-1']=f1
-                        df['f-2']=f2
-                        df['score']=score
+                    if template.columns[0]=='Time_in_s': 
+                         
+                            # print(template)
+                        offset_f=10
+                        offset_t=0.5                  
+                        shape_f=template['Frequency_in_Hz'].values
+                        shape_t=template['Time_in_s'].values
+                        shape_t=shape_t-shape_t.min()
                         
-                        self.detectiondf = df.copy()    
-                        plot_spectrogram()
+                        f_lim=[ shape_f.min() - offset_f ,  shape_f.max() + offset_f ]
+                        k_length_seconds=shape_t.max()+offset_t*2
+    
+                        # generate kernel  
+                        time_step=np.diff(self.t)[0]
+                        
+                        k_t=np.linspace(0,k_length_seconds,int(k_length_seconds/time_step) )
+                        ix_f=np.where((self.f>=f_lim[0]) & (self.f<=f_lim[1]))[0]
+                        k_f=self.f[ix_f[0]:ix_f[-1]]
+                        # k_f=np.linspace(f_lim[0],f_lim[1], int( (f_lim[1]-f_lim[0]) /f_step)  )
+                        
+                        kk_t,kk_f=np.meshgrid(k_t,k_f)   
+                        kernel_background_db=0
+                        kernel_signal_db=1
+                        kernel=np.ones( [ k_f.shape[0] ,k_t.shape[0] ] ) * kernel_background_db
+                        # find wich grid points are inside the shape
+                        x, y = kk_t.flatten(), kk_f.flatten()
+                        points = np.vstack((x,y)).T 
+                        p = Path(list(zip(shape_t, shape_f))) # make a polygon
+                        grid = p.contains_points(points)
+                        mask = grid.reshape(kk_t.shape) # now you have a mask with points inside a polygon  
+                        kernel[mask]=kernel_signal_db
+                        
+                        ix_f=np.where((self.f>=f_lim[0]) & (self.f<=f_lim[1]))[0]
+                        spectrog =10*np.log10( self.Sxx[ ix_f[0]:ix_f[-1],: ] )
+                    
+                        result = match_template(spectrog, kernel)
+                        corr_score=result[0,:]
+                        t_score=np.linspace( self.t[int(kernel.shape[1]/2)] , self.t[-int(kernel.shape[1]/2)], corr_score.shape[0] )
+    
+                        peaks_indices = find_peaks(corr_score, height=corrscore_threshold)[0]
+                     
+                        
+                        t1=[]
+                        t2=[]
+                        f1=[]
+                        f2=[]
+                        score=[]
+                        
+                        if len(peaks_indices)>0: 
+                            t2_old=0
+                            for ixpeak in peaks_indices:     
+                                tstar=t_score[ixpeak] - k_length_seconds/2 - offset_t
+                                tend=t_score[ixpeak] + k_length_seconds/2 - offset_t
+                                # if tstar>t2_old:
+                                t1.append(tstar)
+                                t2.append(tend)
+                                f1.append(f_lim[0]+offset_f)
+                                f2.append(f_lim[1]-offset_f)
+                                score.append(corr_score[ixpeak])
+                                # t2_old=tend
+                            df=pd.DataFrame()
+                            df['t-1']=t1
+                            df['t-2']=t2
+                            df['f-1']=f1
+                            df['f-2']=f2
+                            df['score']=score
+                            
+                            self.detectiondf = df.copy()  
+                            self.detectiondf['audiofilename']= self.current_audiopath 
+                            self.detectiondf['threshold']= corrscore_threshold 
+
+                            plot_spectrogram()
+                    else:  # image kernel
+   
+
+                        k_length_seconds= float(template.columns[-1]) -float(template.columns[0])
+                        
+                        f_lim=[ int(template.index[0]) , int( template.index[-1] )]
+                        ix_f=np.where((self.f>=f_lim[0]) & (self.f<=f_lim[1]))[0]
+                        spectrog =10*np.log10( self.Sxx[ ix_f[0]:ix_f[-1],: ] )
+                        specgram_t_step= self.t[1] - self.t[0]
+                        n_f=spectrog.shape[0]
+                        n_t= int(k_length_seconds/ specgram_t_step)
+                        
+                        kernel= resize( template.values , [ n_f,n_t] )
+                        
+
+                        result = match_template(spectrog, kernel)
+                        corr_score=result[0,:]
+                        t_score=np.linspace( self.t[int(kernel.shape[1]/2)] , self.t[-int(kernel.shape[1]/2)], corr_score.shape[0] )
+    
+                        peaks_indices = find_peaks(corr_score, height=corrscore_threshold)[0]
+                        
+                        # print(corr_score)
+                        
+                        t1=[]
+                        t2=[]
+                        f1=[]
+                        f2=[]
+                        score=[]
+                        
+                        if len(peaks_indices)>0: 
+                            t2_old=0
+                            for ixpeak in peaks_indices:     
+                                tstar=t_score[ixpeak] - k_length_seconds/2 
+                                tend=t_score[ixpeak] + k_length_seconds/2 
+                                # if tstar>t2_old:
+                                t1.append(tstar)
+                                t2.append(tend)
+                                f1.append(f_lim[0])
+                                f2.append(f_lim[1])
+                                score.append(corr_score[ixpeak])
+                                t2_old=tend
+                            df=pd.DataFrame()
+                            df['t-1']=t1
+                            df['t-2']=t2
+                            df['f-1']=f1
+                            df['f-2']=f2
+                            df['score']=score
+                            
+                            self.detectiondf = df.copy()   
+                            self.detectiondf['audiofilename']= self.current_audiopath 
+                            self.detectiondf['threshold']= corrscore_threshold 
+
+                            plot_spectrogram()
+                    
+            def automatic_detector_specgram_corr_allfiles():
+               msg = QtWidgets.QMessageBox()
+               msg.setIcon(QtWidgets.QMessageBox.Information)   
+               msg.setText("Are you sure you want to run the detector over "+ str(self.filenames.shape[0]) +" ?")
+               msg.setStandardButtons(QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No)
+               returnValue = msg.exec()
+
+               if returnValue == QtWidgets.QMessageBox.Yes:
+                   
+                templatefile, ok1 = QtWidgets.QFileDialog.getOpenFileName(self,"QFileDialog.getOpenFileNames()", r"C:\Users","CSV file (*.csv)")
+                if ok1:
+                    template=pd.read_csv(templatefile,index_col=0)
+                    
+                    corrscore_threshold, ok = QtWidgets.QInputDialog.getDouble(self, 'Input Dialog',
+                                                    'Enter correlation threshold in (0-1):',decimals=2)
+                    if corrscore_threshold>1:
+                        corrscore_threshold=1
+                    if corrscore_threshold<0:
+                        corrscore_threshold=0
+                        
+                    self.detectiondf_all=pd.DataFrame([])
+                
+                    for audiopath in self.filenames:
+                        
+                        if self.filename_timekey.text()=='':
+                            self.time= dt.datetime(2000,1,1,0,0,0)
+                        else:  
+                            try:
+                                self.time= dt.datetime.strptime( audiopath.split('/')[-1], self.filename_timekey.text() )
+                            except:
+                                self.time= dt.datetime(2000,1,1,0,0,0)
+                                
+                        self.x,self.fs  =  sf.read(audiopath,dtype='int16')
+                        print('open new file: '+audiopath)
+                        
+                        db_saturation=float( self.db_saturation.text() )
+                        x=self.x/32767 
+                        p =np.power(10,(db_saturation/20))*x #convert data.signal to uPa    
+                        
+                        fft_size=int( self.fft_size.currentText() )
+                        fft_overlap=float(  self.fft_overlap.currentText() )
+                        
+                        self.f, self.t, self.Sxx = signal.spectrogram(p, self.fs, window='hamming',nperseg=fft_size,noverlap=fft_size*fft_overlap)
+                       
+                        # self.plotwindow_startsecond=0
+                        # self.plotwindow_length = self.t.max()
+                
+                        if template.columns[0]=='Time_in_s': 
+                            
+                            # print(template)
+                            offset_f=10
+                            offset_t=0.5                  
+                            shape_f=template['Frequency_in_Hz'].values
+                            shape_t=template['Time_in_s'].values
+                            shape_t=shape_t-shape_t.min()
+                            
+                            f_lim=[ shape_f.min() - offset_f ,  shape_f.max() + offset_f ]
+                            k_length_seconds=shape_t.max()+offset_t*2
+        
+                            # generate kernel  
+                            time_step=np.diff(self.t)[0]
+                            
+                            k_t=np.linspace(0,k_length_seconds,int(k_length_seconds/time_step) )
+                            ix_f=np.where((self.f>=f_lim[0]) & (self.f<=f_lim[1]))[0]
+                            k_f=self.f[ix_f[0]:ix_f[-1]]
+                            # k_f=np.linspace(f_lim[0],f_lim[1], int( (f_lim[1]-f_lim[0]) /f_step)  )
+                            
+                            kk_t,kk_f=np.meshgrid(k_t,k_f)   
+                            kernel_background_db=0
+                            kernel_signal_db=1
+                            kernel=np.ones( [ k_f.shape[0] ,k_t.shape[0] ] ) * kernel_background_db
+                            # find wich grid points are inside the shape
+                            x, y = kk_t.flatten(), kk_f.flatten()
+                            points = np.vstack((x,y)).T 
+                            p = Path(list(zip(shape_t, shape_f))) # make a polygon
+                            grid = p.contains_points(points)
+                            mask = grid.reshape(kk_t.shape) # now you have a mask with points inside a polygon  
+                            kernel[mask]=kernel_signal_db
+                            
+                            ix_f=np.where((self.f>=f_lim[0]) & (self.f<=f_lim[1]))[0]
+                            spectrog =10*np.log10( self.Sxx[ ix_f[0]:ix_f[-1],: ] )
+                        
+                            result = match_template(spectrog, kernel)
+                            corr_score=result[0,:]
+                            t_score=np.linspace( self.t[int(kernel.shape[1]/2)] , self.t[-int(kernel.shape[1]/2)], corr_score.shape[0] )
+        
+                            peaks_indices = find_peaks(corr_score, height=corrscore_threshold)[0]
+                         
+                            
+                            t1=[]
+                            t2=[]
+                            f1=[]
+                            f2=[]
+                            score=[]
+                            
+                            if len(peaks_indices)>0: 
+                                t2_old=0
+                                for ixpeak in peaks_indices:     
+                                    tstar=t_score[ixpeak] - k_length_seconds/2 - offset_t
+                                    tend=t_score[ixpeak] + k_length_seconds/2 - offset_t
+                                    # if tstar>t2_old:
+                                    t1.append(tstar)
+                                    t2.append(tend)
+                                    f1.append(f_lim[0]+offset_f)
+                                    f2.append(f_lim[1]-offset_f)
+                                    score.append(corr_score[ixpeak])
+                                    t2_old=tend
+                                df=pd.DataFrame()
+                                df['t-1']=t1
+                                df['t-2']=t2
+                                df['f-1']=f1
+                                df['f-2']=f2
+                                df['score']=score
+                                
+                                self.detectiondf = df.copy()  
+                                self.detectiondf['audiofilename']= audiopath 
+                                self.detectiondf['threshold']= corrscore_threshold 
+                        else:  # image kernel
+                            k_length_seconds= float(template.columns[-1]) -float(template.columns[0])
+                            
+                            f_lim=[ int(template.index[0]) , int( template.index[-1] )]
+                            ix_f=np.where((self.f>=f_lim[0]) & (self.f<=f_lim[1]))[0]
+                            spectrog =10*np.log10( self.Sxx[ ix_f[0]:ix_f[-1],: ] )
+                            specgram_t_step= self.t[1] - self.t[0]
+                            n_f=spectrog.shape[0]
+                            n_t= int(k_length_seconds/ specgram_t_step)
+                            
+                            kernel= resize( template.values , [ n_f,n_t] )
+                            
+    
+                            result = match_template(spectrog, kernel)
+                            corr_score=result[0,:]
+                            t_score=np.linspace( self.t[int(kernel.shape[1]/2)] , self.t[-int(kernel.shape[1]/2)], corr_score.shape[0] )
+        
+                            peaks_indices = find_peaks(corr_score, height=corrscore_threshold)[0]
+                            
+                            # print(corr_score)
+                            
+                            t1=[]
+                            t2=[]
+                            f1=[]
+                            f2=[]
+                            score=[]
+                            
+                            if len(peaks_indices)>0: 
+                                t2_old=0
+                                for ixpeak in peaks_indices:     
+                                    tstar=t_score[ixpeak] - k_length_seconds/2 
+                                    tend=t_score[ixpeak] + k_length_seconds/2 
+                                    # if tstar>t2_old:
+                                    t1.append(tstar)
+                                    t2.append(tend)
+                                    f1.append(f_lim[0])
+                                    f2.append(f_lim[1])
+                                    score.append(corr_score[ixpeak])
+                                    t2_old=tend
+                                df=pd.DataFrame()
+                                df['t-1']=t1
+                                df['t-2']=t2
+                                df['f-1']=f1
+                                df['f-2']=f2
+                                df['score']=score
+                                
+                                self.detectiondf = df.copy()   
+                                self.detectiondf['audiofilename']= self.current_audiopath 
+                                self.detectiondf['threshold']= corrscore_threshold 
+                    
+                        self.detectiondf_all=pd.concat([ self.detectiondf_all,self.detectiondf ])
+                        self.detectiondf_all=self.detectiondf_all.reset_index(drop=True)
+
+                        print(self.detectiondf_all)
+                        
+                        
+                    self.detectiondf= self.detectiondf_all   
+                    # self.detectiondf=self.detectiondf.reset_index(drop=True)
+                    print('done!!!')
 
             def automatic_detector_shapematching():
                 # open template
@@ -439,27 +683,108 @@ def start():
                 
                 templatefile, ok1 = QtWidgets.QFileDialog.getOpenFileName(self,"QFileDialog.getOpenFileNames()", r"C:\Users","CSV file (*.csv)")
                 if ok1:
-                    template=pd.read_csv(templatefile)
-                
-                    # print(template)
+                    template=pd.read_csv(templatefile,index_col=0)
                     
-                    # set db threshold   
-                    db_threshold, ok = QtWidgets.QInputDialog.getInt(self, 'Input Dialog',
-                                                    'Enter signal-to-noise threshold in dB:')
-                    if ok:
-                        print(db_threshold)
-                        self.detectiondf=pd.DataFrame([])
-
-                        find_regions(db_threshold)            
-                        match_bbox_and_iou(template)    
-                        ixdel=np.where(self.detectiondf['score']<0.01)[0]
-                        self.detectiondf=self.detectiondf.drop(ixdel)
-                        self.detectiondf=self.detectiondf.reset_index()
-                        print(self.detectiondf)
-            
-                        # plot results
-                        plot_spectrogram()
+                    if template.columns[0]=='Time_in_s': 
+                        # print(template)
                         
+                        # set db threshold   
+                        db_threshold, ok = QtWidgets.QInputDialog.getInt(self, 'Input Dialog',
+                                                        'Enter signal-to-noise threshold in dB:')
+                        if ok:
+                            print(db_threshold)
+                            self.detectiondf=pd.DataFrame([])
+        
+                            find_regions(db_threshold)            
+                            match_bbox_and_iou(template)    
+                            ixdel=np.where(self.detectiondf['score']<0.01)[0]
+                            self.detectiondf=self.detectiondf.drop(ixdel)
+                            self.detectiondf=self.detectiondf.reset_index(drop=True)
+                            self.detectiondf['audiofilename']= self.current_audiopath 
+                            self.detectiondf['threshold']= db_threshold 
+        
+                            print(self.detectiondf)
+                
+                            # plot results
+                            plot_spectrogram()
+                    else:
+                           msg = QtWidgets.QMessageBox()
+                           msg.setIcon(QtWidgets.QMessageBox.Information)   
+                           msg.setText("Wrong template format")
+                           msg.setStandardButtons(QtWidgets.QMessageBox.Ok)
+                           returnValue = msg.exec()
+                                   
+                        
+            def automatic_detector_shapematching_allfiles():
+               msg = QtWidgets.QMessageBox()
+               msg.setIcon(QtWidgets.QMessageBox.Information)   
+               msg.setText("Are you sure you want to run the detector over "+ str(self.filenames.shape[0]) +"files ?")
+               msg.setStandardButtons(QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No)
+               returnValue = msg.exec()
+    
+               if returnValue == QtWidgets.QMessageBox.Yes:
+                    templatefile, ok1 = QtWidgets.QFileDialog.getOpenFileName(self,"QFileDialog.getOpenFileNames()", r"C:\Users","CSV file (*.csv)")
+                    template=pd.read_csv(templatefile,index_col=0)
+                    
+                    self.detectiondf_all=pd.DataFrame([])
+                 
+                    
+                    if template.columns[0]=='Time_in_s': 
+    
+                        db_threshold, ok = QtWidgets.QInputDialog.getInt(self, 'Input Dialog',
+                                                        'Enter signal-to-noise threshold in dB:')                   
+                                          
+                        for audiopath in self.filenames:
+                                            
+                            if self.filename_timekey.text()=='':
+                                self.time= dt.datetime(2000,1,1,0,0,0)
+                            else:  
+                                try:
+                                    self.time= dt.datetime.strptime( audiopath.split('/')[-1], self.filename_timekey.text() )
+                                except:
+                                    self.time= dt.datetime(2000,1,1,0,0,0)
+                                    
+                            self.x,self.fs  =  sf.read(audiopath,dtype='int16')
+                            print('open new file: '+audiopath)
+                            
+                            db_saturation=float( self.db_saturation.text() )
+                            x=self.x/32767 
+                            p =np.power(10,(db_saturation/20))*x #convert data.signal to uPa    
+                            
+                            fft_size=int( self.fft_size.currentText() )
+                            fft_overlap=float(  self.fft_overlap.currentText() )
+                            
+                            self.f, self.t, self.Sxx = signal.spectrogram(p, self.fs, window='hamming',nperseg=fft_size,noverlap=fft_size*fft_overlap)
+                           
+                            self.plotwindow_startsecond=0
+                            self.plotwindow_length = self.t.max()
+                    
+                            self.detectiondf=pd.DataFrame([])
+        
+                            find_regions(db_threshold)            
+                            match_bbox_and_iou(template)    
+                            ixdel=np.where(self.detectiondf['score']<0.01)[0]
+                            self.detectiondf=self.detectiondf.drop(ixdel)
+                            self.detectiondf=self.detectiondf.reset_index(drop=True)
+                            self.detectiondf['audiofilename']= audiopath
+                            self.detectiondf['threshold']= db_threshold 
+        
+                            self.detectiondf_all=pd.concat([ self.detectiondf_all,self.detectiondf ])
+                            self.detectiondf_all=self.detectiondf_all.reset_index(drop=True)
+        
+                            print(self.detectiondf_all)
+                    else:
+                           msg = QtWidgets.QMessageBox()
+                           msg.setIcon(QtWidgets.QMessageBox.Information)   
+                           msg.setText("Wrong template format")
+                           msg.setStandardButtons(QtWidgets.QMessageBox.Ok)
+                           returnValue = msg.exec()                    
+                        
+                    self.detectiondf= self.detectiondf_all   
+                    # self.detectiondf=self.detectiondf.reset_index(drop=True)
+                    print('done!!!')
+                                     
+
             def export_automatic_detector_shapematching():
                 if self.detectiondf.shape[0]>0:
                     savename = QtWidgets.QFileDialog.getSaveFileName(self,"QFileDialog.getSaveFileName()", r"C:\Users", "csv files (*.csv)")
@@ -474,7 +799,8 @@ def start():
                        't2': pd.Series(dtype='datetime64[ns]'),
                        'f1': pd.Series(dtype='float'),
                        'f2': pd.Series(dtype='float'),
-                       'label': pd.Series(dtype='object')   })
+                       'label': pd.Series(dtype='object'),
+                       'audiofilename': pd.Series(dtype='object')})
                 
                 # self.annotation=pd.DataFrame(columns=['t1','t2','f1','f2','label'],dtype=[("t1", "datetime64[ns]"), ("t2", "datetime64[ns]"), ("f1", "float"), ("f2", "float"), ("label", "object")] )
                 
@@ -492,6 +818,7 @@ def start():
                 self.filenames, _ = QtWidgets.QFileDialog.getOpenFileNames(self,"QFileDialog.getOpenFileNames()", r"C:\Users\a5278\Documents\passive_acoustics\detector_delevopment\detector_validation_subset","Audio Files (*.wav *.aif *.aiff *.aifc *.ogg *.flac)", options=options)
                 self.filenames = np.array( self.filenames )
                 print(self.filenames)
+                plot_next_spectro()
             openfilebutton.clicked.connect(openfilefunc)
             
             
@@ -535,7 +862,7 @@ def start():
                 p =np.power(10,(db_saturation/20))*x #convert data.signal to uPa    
                 
                 fft_size=int( self.fft_size.currentText() )
-                fft_overlap=float(  self.fft_overlap.text() )
+                fft_overlap=float(  self.fft_overlap.currentText() )
                 self.f, self.t, self.Sxx = signal.spectrogram(p, self.fs, window='hamming',nperseg=fft_size,noverlap=int(fft_size*fft_overlap))
                 # self.t=self.time +  pd.to_timedelta( t  , unit='s')           
             
@@ -664,7 +991,9 @@ def start():
 
             # plot annotations
                 if self.annotation.shape[0]>0:
-                     ix=(self.annotation['t1'] > (np.array(self.time).astype('datetime64[ns]')+pd.Timedelta(self.plotwindow_startsecond, unit="s") )  ) & (self.annotation['t1'] < (np.array(self.time).astype('datetime64[ns]')+pd.Timedelta(self.plotwindow_startsecond+self.plotwindow_length, unit="s") )  )          
+                     ix=(self.annotation['t1'] > (np.array(self.time).astype('datetime64[ns]')+pd.Timedelta(self.plotwindow_startsecond, unit="s") )  ) & \
+                         (self.annotation['t1'] < (np.array(self.time).astype('datetime64[ns]')+pd.Timedelta(self.plotwindow_startsecond+self.plotwindow_length, unit="s") )  )   &\
+                         (self.annotation['audiofilename'] ==  self.current_audiopath  )
                      if np.sum(ix)>0:
                          ix=np.where(ix)[0]
                          print('ix is')
@@ -679,11 +1008,13 @@ def start():
                 if self.detectiondf.shape[0]>0:                
                     for i in range(self.detectiondf.shape[0]):     
                         
-                        insidewindow=(self.detectiondf.loc[i,'t-1'] > self.plotwindow_startsecond  ) & (self.detectiondf.loc[i,'t-2'] < (self.plotwindow_startsecond+self.plotwindow_length)   )          
+                        insidewindow=(self.detectiondf.loc[i,'t-1'] > self.plotwindow_startsecond  ) & (self.detectiondf.loc[i,'t-2'] < (self.plotwindow_startsecond+self.plotwindow_length)   )   &\
+                                                    (self.detectiondf.loc[i,'audiofilename'] ==  self.current_audiopath  )
+ 
                         scoremin=self.detectiondf['score'].min()
                         scoremax=self.detectiondf['score'].max()
                        
-                        if (self.detectiondf.loc[i,'score']>0.01) & insidewindow:
+                        if (self.detectiondf.loc[i,'score']>=0.01) & insidewindow:
                    
                             xx1=self.detectiondf.loc[i,'t-1']
                             xx2=self.detectiondf.loc[i,'t-2']
@@ -716,7 +1047,49 @@ def start():
 
                 self.canvas.draw()
                 self.cid1=self.canvas.fig.canvas.mpl_connect('button_press_event', onclick)
-        
+
+
+            def export_zoomed_sgram_as_csv():
+             if self.filecounter>=0:
+                 
+                    # filter out background
+                spectrog = 10*np.log10(self.Sxx )     
+                rectime= pd.to_timedelta( self.t ,'s')
+                spg=pd.DataFrame(np.transpose(spectrog),index=rectime)
+                bg=spg.resample('3min').mean().copy()
+                bg=bg.resample('1s').interpolate(method='time')
+                bg=    bg.reindex(rectime,method='nearest')
+                background=np.transpose(bg.values)   
+                z=spectrog-background
+     
+                
+                self.f_limits=self.canvas.axes.get_ylim()
+                self.t_limits=self.canvas.axes.get_xlim()
+                y1=int(self.f_limits[0])    
+                y2=int(self.f_limits[1])    
+                t1=self.t_limits[0]
+                t2=self.t_limits[1]
+
+                        
+                ix_time=np.where( (self.t>=t1) & (self.t<t2 ))[0]
+                ix_f=np.where((self.f>=y1) & (self.f<y2))[0]
+                # print(ix_time.shape)
+                # print(ix_f.shape)
+                plotsxx_db= z[ int(ix_f[0]):int(ix_f[-1]),int(ix_time[0]):int(ix_time[-1]) ] 
+                
+                sgram = pd.DataFrame(data=plotsxx_db, index=self.f[ix_f[:-1]] , columns=self.t[ix_time[:-1]] )
+                print(sgram)
+                
+                savename = QtWidgets.QFileDialog.getSaveFileName(self,"", "csv files (*.csv)")
+                if len(savename[0])>0:     
+                    if savename[-4:]!='.csv':
+                        savename=savename[0]+'.csv'
+                    sgram.to_csv(savename)                 
+           
+           
+      
+                            
+                
             def box_select_callback(eclick, erelease):
 
                 x1, y1 = eclick.xdata, eclick.ydata
@@ -742,7 +1115,8 @@ def start():
                        't2': pd.Series(t2,dtype='datetime64[ns]'),
                        'f1': pd.Series(f1,dtype='float'),
                        'f2': pd.Series(f2,dtype='float'),
-                       'label': pd.Series(c_label,dtype='object')   })
+                       'label': pd.Series(c_label,dtype='object') , 
+                        'audiofilename':  self.current_audiopath })
                 
                 # a=pd.DataFrame(data=[ [x1,x2,y1,y2,c_label ] ],columns=['t1','t2','f1','f2','label'])
                 # print('a:')
@@ -898,11 +1272,11 @@ def start():
             # QtGui.QShortcut(QtCore.Qt.Key_Right, MainWindow, plot_next_spectro())
             # self.msgSc = QShortcut(QKeySequence(u"\u2192"), self)
             # self.msgSc.activated.connect(plot_next_spectro)
-            button_plot_spectro=QtWidgets.QPushButton('Next spectrogram-->')
-            button_plot_spectro.clicked.connect(plot_next_spectro)
+            # button_plot_spectro=QtWidgets.QPushButton('Next spectrogram-->')
+            # button_plot_spectro.clicked.connect(plot_next_spectro)
             
-            button_plot_prevspectro=QtWidgets.QPushButton('<--Previous spectrogram')
-            button_plot_prevspectro.clicked.connect(plot_previous_spectro)
+            # button_plot_prevspectro=QtWidgets.QPushButton('<--Previous spectrogram')
+            # button_plot_prevspectro.clicked.connect(plot_previous_spectro)
         
             button_save=QtWidgets.QPushButton('Save annotation csv')
             def func_savecsv():         
@@ -975,7 +1349,7 @@ def start():
                         p =np.power(10,(db_saturation/20))*x #convert data.signal to uPa    
                         
                         fft_size=int( self.fft_size.currentText() )
-                        fft_overlap=float(  self.fft_overlap.text() )
+                        fft_overlap=float(  self.fft_overlap.currentText() )
                         
                         
                         self.f, self.t, self.Sxx = signal.spectrogram(p, self.fs, window='hamming',nperseg=fft_size,noverlap=fft_size*fft_overlap)
@@ -1032,10 +1406,10 @@ def start():
                         else:
                             self.canvas.axes.set_yscale('linear')        
                             
-                        if self.filename_timekey.text()=='':
-                            self.canvas.axes.set_title(self.current_audiopath.split('/')[-1])
-                        else:     
-                            self.canvas.axes.set_title(self.time)
+                        # if self.filename_timekey.text()=='':
+                        #     self.canvas.axes.set_title(self.current_audiopath.split('/')[-1])
+                        # else:     
+                        #     self.canvas.axes.set_title(self.time)
             
                         clims=img.get_clim()
                         if (self.db_vmin.text()=='') & (self.db_vmax.text()!=''):
@@ -1083,26 +1457,41 @@ def start():
                         self.draw_x=self.draw_x.append( pd.Series(event.xdata) ,ignore_index=True )
                         self.draw_y=self.draw_y.append( pd.Series(event.ydata) ,ignore_index=True )
                         self.f_limits=self.canvas.axes.get_ylim()
-                        self.t_limits=self.canvas.axes.get_xlim()                              
-                        func_draw_shape_plot()   
+                        self.t_limits=self.canvas.axes.get_xlim()   
+                        
+                        line = self.line_2.pop(0)
+                        line.remove()        
+                        self.line_2 =self.canvas.axes.plot(self.draw_x,self.draw_y,'.-g')      
+                        self.canvas.draw()    
+                                 
+                        # func_draw_shape_plot()   
                       
                     if event.button==3:
                         self.draw_x=self.draw_x.head(-1)
                         self.draw_y=self.draw_y.head(-1)
                         self.f_limits=self.canvas.axes.get_ylim()
                         self.t_limits=self.canvas.axes.get_xlim()
-                        func_draw_shape_plot()              
-     
+                        # func_draw_shape_plot()              
+                        line = self.line_2.pop(0)
+                        line.remove()        
+                        self.line_2 =self.canvas.axes.plot(self.draw_x,self.draw_y,'.-g')     
+                        self.canvas.draw()    
+                                  
+                        # func_draw_shape_plot()   
+                        
             def func_draw_shape_exit():
                 print('save shape' + str(self.draw_x.shape))
                 self.canvas.fig.canvas.mpl_disconnect(self.cid2)
                 plot_spectrogram()
                 print('back to boxes')
+                ## deactive shortcut
+                self.drawexitm.setEnabled(False)  
+
                 if self.draw_x.shape[0]>0:
                     options = QtWidgets.QFileDialog.Options()
                     savename = QtWidgets.QFileDialog.getSaveFileName(self,"QFileDialog.getSaveFileName()", "csv files (*.csv)",options=options)
                     if len(savename[0])>0:     
-                        if savename[:-4]!='.csv':
+                        if savename[-4:]!='.csv':
                             savename=savename[0]+'.csv'
                         # drawcsv=pd.concat([self.draw_x,self.draw_y],axis=1)
                         drawcsv=pd.DataFrame(columns=['Time_in_s','Frequency_in_Hz'])
@@ -1110,9 +1499,7 @@ def start():
                         drawcsv['Frequency_in_Hz']=self.draw_y
                         drawcsv.to_csv(savename)   
                         
-            self.drawexitm = QtWidgets.QShortcut(QtCore.Qt.Key_Return, self)
-            self.drawexitm.activated.connect(func_draw_shape_exit)  
-
+          
             def func_draw_shape():                  
                msg = QtWidgets.QMessageBox()
                msg.setIcon(QtWidgets.QMessageBox.Information)   
@@ -1125,10 +1512,15 @@ def start():
                    self.draw_y=pd.Series(dtype='float')
                    self.f_limits=self.canvas.axes.get_ylim()
                    self.t_limits=self.canvas.axes.get_xlim()
-                   self.canvas.fig.canvas.mpl_disconnect(self.cid1)
-                   func_draw_shape_plot()                                                                           
+                   self.canvas.fig.canvas.mpl_disconnect(self.cid1)    
+                   self.cid2=self.canvas.fig.canvas.mpl_connect('button_press_event', onclick_draw)
+                   self.line_2 =self.canvas.axes.plot(self.draw_x,self.draw_y,'.-g')        
+                   func_draw_shape_plot()   
+                   self.drawexitm = QtWidgets.QShortcut(QtCore.Qt.Key_Return, self)
+                   self.drawexitm.activated.connect(func_draw_shape_exit)  
+                                                                        
             button_draw_shape.clicked.connect(func_draw_shape)
-            
+                   
             ####### play audio
             button_play_audio=QtWidgets.QPushButton('Play/Stop [spacebar]')
             def func_playaudio():
@@ -1219,29 +1611,134 @@ def start():
                         x_resampled=x_resampled * (maximum_x/old_max)
                         x_resampled = x_resampled.astype(np.int16)
                         
-                        if savename[:-4]!='.wav':
+                        if savename[-4:]!='.wav':
                             savename=savename+'.wav'
                         wav.write(savename, new_rate, x_resampled)
             button_save_audio.clicked.connect(func_saveaudio)        
+ 
+            button_save_video=QtWidgets.QPushButton('Export video')         
+            def func_save_video():
+                if self.filecounter>=0:
+                    savename = QtWidgets.QFileDialog.getSaveFileName(self,"QFileDialog.getSaveFileName()", "video files (*.mp4)")
+                    if len(savename[0])>0:     
+                        savename=savename[0]
+                        new_rate = 32000          
+        
+                        t_limits=self.canvas.axes.get_xlim()
+                        f_limits=list(self.canvas.axes.get_ylim())
+                        if f_limits[1]>=(self.fs/2):
+                            f_limits[1]= self.fs/2-10
+                        print(t_limits)
+                        print(f_limits)
+                        x_select=self.x[int(t_limits[0]*self.fs) : int(t_limits[1]*self.fs) ]     
+                        
+                        sos=signal.butter(8, f_limits, 'bandpass', fs=self.fs, output='sos')
+                        x_select = signal.sosfilt(sos, x_select)
+                                           
+                        number_of_samples = round(len(x_select) * (float(new_rate)/ float(self.playbackspeed.currentText())) / self.fs)
+                        x_resampled = np.array(signal.resample(x_select, number_of_samples)).astype('int') 
+                                            #normalize sound level
+                        maximum_x=32767*0.8
+                        old_max=np.max(np.abs([x_resampled.min(),x_resampled.max()]))
+                        x_resampled=x_resampled * (maximum_x/old_max)
+                        x_resampled = x_resampled.astype(np.int16)
+                        
+                        if savename[:-4]=='.wav':
+                            savename=savename[:-4]
+                        if savename[:-4]=='.mp4':
+                            savename=savename[:-4]
+                        wav.write(savename+'.wav', new_rate, x_resampled)
+                        
+                        # self.f_limits=self.canvas.axes.get_ylim()
+                        # self.t_limits=self.canvas.axes.get_xlim()
+   
+                        audioclip = AudioFileClip(savename+'.wav')
+                        duration=audioclip.duration
+                        # func_draw_shape_plot()     
+
+                        self.canvas.axes.set_title(None)                                              
+                        # self.canvas.axes.set_ylim(f_limits)
+                        # self.canvas.axes.set_xlim(t_limits)
+                        self.line_2=self.canvas.axes.plot([t_limits[0]  ,t_limits[0]  ],f_limits,'-k')  
+                        def make_frame(x):
+                           s=t_limits[1] - t_limits[0]
+                           xx= x/duration * s + t_limits[0]            
+                           line = self.line_2.pop(0)
+                           line.remove()                         
+                           self.line_2=self.canvas.axes.plot([xx,xx],f_limits,'-k')    
+                           
+                    
+                           return mplfig_to_npimage(self.canvas.fig)
+                       
+                        animation = VideoClip(make_frame, duration = duration )                        
+                        animation = animation.set_audio(audioclip)
+                        animation.write_videofile(savename+".mp4",fps=24,preset='fast')
+
+                        plot_spectrogram()  
+                        # self.canvas.fig.canvas.mpl_disconnect(self.cid2)
+                                          
+            button_save_video.clicked.connect(func_save_video)        
               
+############# menue
+            menuBar = self.menuBar()
+
+            # Creating menus using a title
+            openMenu = menuBar.addAction("Open files")
+            openMenu.triggered.connect(openfilefunc)
+
+            
+            exportMenu = menuBar.addMenu("Export")
+            e1 =exportMenu.addAction("Spectrogram as .wav file")
+            e1.triggered.connect(func_saveaudio)
+            e2 =exportMenu.addAction("Spectrogram as animated video")
+            e2.triggered.connect(func_save_video)
+            e3 =exportMenu.addAction("Spectrogram as .csv table")
+            e3.triggered.connect(export_zoomed_sgram_as_csv)            
+            e4 =exportMenu.addAction("All files as spectrogram images")
+            e4.triggered.connect(plot_all_spectrograms)
+            e5 =exportMenu.addAction("Annotations as .csv table")
+            e5.triggered.connect(func_savecsv)                  
+            e6 =exportMenu.addAction("Automatic detections as .csv table")
+            e6.triggered.connect(export_automatic_detector_shapematching)            
+            
+            drawMenu = menuBar.addAction("Draw")
+            drawMenu.triggered.connect(func_draw_shape)            
+            
+            
+            autoMenu = menuBar.addMenu("Automatic detection")
+            a1 =autoMenu.addAction("Shapematching on current file")
+            a1.triggered.connect(automatic_detector_shapematching)
+            a2 =autoMenu.addAction("Spectrogram correlation on current file")
+            a2.triggered.connect(automatic_detector_specgram_corr)
+            a3 =autoMenu.addAction("Shapematching on all files")
+            a3.triggered.connect(automatic_detector_shapematching_allfiles)
+            a4 =autoMenu.addAction("Spectrogram correlation on all files")
+            a4.triggered.connect(automatic_detector_specgram_corr_allfiles)
+            
+            quitMenu = menuBar.addAction("Quit")
+            quitMenu.triggered.connect(QtWidgets.QApplication.instance().quit)
+
+#################
+             
             ######## layout
             outer_layout = QtWidgets.QVBoxLayout()
             
-            top_layout = QtWidgets.QHBoxLayout()       
+            # top_layout = QtWidgets.QHBoxLayout()       
             
-            top_layout.addWidget(openfilebutton)
-            top_layout.addWidget(checkbox_log)
-            top_layout.addWidget(button_plot_prevspectro)
-            top_layout.addWidget(button_plot_spectro)
-            top_layout.addWidget(button_plot_all_spectrograms)
-            top_layout.addWidget(button_play_audio)
-            top_layout.addWidget(QtWidgets.QLabel('Playback speed:'))        
-            top_layout.addWidget(self.playbackspeed)
-            top_layout.addWidget(button_save_audio)            
-            top_layout.addWidget(button_draw_shape)            
+            # top_layout.addWidget(openfilebutton)
+            
+            # top_layout.addWidget(button_plot_prevspectro)
+            # top_layout.addWidget(button_plot_spectro)
+            # # top_layout.addWidget(button_plot_all_spectrograms)
+            # top_layout.addWidget(button_play_audio)
+            # top_layout.addWidget(QtWidgets.QLabel('Playback speed:'))        
+            # top_layout.addWidget(self.playbackspeed)
+            # # top_layout.addWidget(button_save_audio)    
+            # # top_layout.addWidget(button_save_video)    
+            # # top_layout.addWidget(button_draw_shape)            
 
-            top_layout.addWidget(button_save)            
-            top_layout.addWidget(button_quit)
+            # top_layout.addWidget(button_save)            
+            # top_layout.addWidget(button_quit)
 
             top2_layout = QtWidgets.QHBoxLayout()   
             
@@ -1250,25 +1747,28 @@ def start():
             # self.t_start = QtWidgets.QLineEdit(self)
             # self.t_end = QtWidgets.QLineEdit(self)
             # self.fft_size = QtWidgets.QLineEdit(self)
-            top2_layout.addWidget(QtWidgets.QLabel('filename key:'))        
+            top2_layout.addWidget(checkbox_log)
+            top2_layout.addWidget(self.checkbox_logscale)
+            top2_layout.addWidget(self.checkbox_background)
+
+            top2_layout.addWidget(QtWidgets.QLabel('Timestamp:'))        
             top2_layout.addWidget(self.filename_timekey)
             top2_layout.addWidget(QtWidgets.QLabel('f_min[Hz]:'))
             top2_layout.addWidget(self.f_min)     
             top2_layout.addWidget(QtWidgets.QLabel('f_max[Hz]:'))
             top2_layout.addWidget(self.f_max)
-            top2_layout.addWidget(QtWidgets.QLabel('Spectrogram length [sec]:'))
+            top2_layout.addWidget(QtWidgets.QLabel('Spec. length [sec]:'))
             top2_layout.addWidget(self.t_length)
      
-            top2_layout.addWidget(QtWidgets.QLabel('fft_size[bits]:'))
-            top2_layout.addWidget(self.fft_size) 
-            top2_layout.addWidget(QtWidgets.QLabel('fft_overlap[0-1]:'))
-            top2_layout.addWidget(self.fft_overlap) 
+            # top2_layout.addWidget(QtWidgets.QLabel('fft_size[bits]:'))
+            # top2_layout.addWidget(self.fft_size) 
+            # top2_layout.addWidget(QtWidgets.QLabel('fft_overlap[0-1]:'))
+            # top2_layout.addWidget(self.fft_overlap) 
             
 
-            top2_layout.addWidget(self.checkbox_logscale)
             
-            top2_layout.addWidget(QtWidgets.QLabel('colormap:'))
-            top2_layout.addWidget( self.colormap_plot)        
+            # top2_layout.addWidget(QtWidgets.QLabel('Colormap:'))
+            # top2_layout.addWidget( self.colormap_plot)        
             
             
             top2_layout.addWidget(QtWidgets.QLabel('Saturation dB:'))
@@ -1280,7 +1780,6 @@ def start():
             top2_layout.addWidget(self.db_vmax)
             
 
-            top2_layout.addWidget(self.checkbox_background)
             
             # annotation label area
             top3_layout = QtWidgets.QHBoxLayout()   
@@ -1291,31 +1790,31 @@ def start():
             top3_layout.addWidget(self.checkbox_an_1)
             self.an_1 = QtWidgets.QLineEdit(self)
             top3_layout.addWidget(self.an_1) 
-            self.an_1.setText('FW_20_Hz')
+            self.an_1.setText('')
             
             self.checkbox_an_2=QtWidgets.QCheckBox()
             top3_layout.addWidget(self.checkbox_an_2)
             self.an_2 = QtWidgets.QLineEdit(self)
             top3_layout.addWidget(self.an_2) 
-            self.an_2.setText('FW_40_Hz')
+            self.an_2.setText('')
             
             self.checkbox_an_3=QtWidgets.QCheckBox()
             top3_layout.addWidget(self.checkbox_an_3)
             self.an_3 = QtWidgets.QLineEdit(self)
             top3_layout.addWidget(self.an_3) 
-            self.an_3.setText('BW_D_call')
+            self.an_3.setText('')
             
             self.checkbox_an_4=QtWidgets.QCheckBox()
             top3_layout.addWidget(self.checkbox_an_4)
             self.an_4 = QtWidgets.QLineEdit(self)
             top3_layout.addWidget(self.an_4) 
-            self.an_4.setText('BW_Z_call')
+            self.an_4.setText('')
             
             self.checkbox_an_5=QtWidgets.QCheckBox()
             top3_layout.addWidget(self.checkbox_an_5)
             self.an_5 = QtWidgets.QLineEdit(self)
             top3_layout.addWidget(self.an_5) 
-            self.an_5.setText('US_100-200')
+            self.an_5.setText('')
 
             self.checkbox_an_6=QtWidgets.QCheckBox()
             top3_layout.addWidget(self.checkbox_an_6)
@@ -1323,24 +1822,29 @@ def start():
             top3_layout.addWidget(self.an_6) 
             self.an_6.setText('')
             
-            self.checkbox_an_7=QtWidgets.QCheckBox()
-            top3_layout.addWidget(self.checkbox_an_7)
-            self.an_7 = QtWidgets.QLineEdit(self)
-            top3_layout.addWidget(self.an_7) 
-            self.an_7.setText('')
+            # self.checkbox_an_7=QtWidgets.QCheckBox()
+            # top3_layout.addWidget(self.checkbox_an_7)
+            # self.an_7 = QtWidgets.QLineEdit(self)
+            # top3_layout.addWidget(self.an_7) 
+            # self.an_7.setText('')
+            
 
-            button_autodetect_shape=QtWidgets.QPushButton('Shapematching')         
-            button_autodetect_shape.clicked.connect(automatic_detector_shapematching)        
-            top3_layout.addWidget(button_autodetect_shape)            
+            # button_export_sgramcsv=QtWidgets.QPushButton('Export spectrog. csv')         
+            # button_export_sgramcsv.clicked.connect(export_zoomed_sgram_as_csv)        
+            # top3_layout.addWidget(button_export_sgramcsv)    
+            
+            # button_autodetect_shape=QtWidgets.QPushButton('Shapematching')         
+            # button_autodetect_shape.clicked.connect(automatic_detector_shapematching)        
+            # top3_layout.addWidget(button_autodetect_shape)            
 
-            button_autodetect_corr=QtWidgets.QPushButton('Spectrog. correlation')         
-            button_autodetect_corr.clicked.connect(automatic_detector_specgram_corr)        
-            top3_layout.addWidget(button_autodetect_corr)            
+            # button_autodetect_corr=QtWidgets.QPushButton('Spectrog. correlation')         
+            # button_autodetect_corr.clicked.connect(automatic_detector_specgram_corr)        
+            # top3_layout.addWidget(button_autodetect_corr)            
                         
 
-            button_saveautodetect=QtWidgets.QPushButton('Export auto-detec.')         
-            button_saveautodetect.clicked.connect(export_automatic_detector_shapematching)        
-            top3_layout.addWidget(button_saveautodetect)    
+            # button_saveautodetect=QtWidgets.QPushButton('Export auto-detec.')         
+            # button_saveautodetect.clicked.connect(export_automatic_detector_shapematching)        
+            # top3_layout.addWidget(button_saveautodetect)    
             
             
 
@@ -1357,7 +1861,7 @@ def start():
             self.bg.addButton(self.checkbox_an_4,4)
             self.bg.addButton(self.checkbox_an_5,5)
             self.bg.addButton(self.checkbox_an_6,6)
-            self.bg.addButton(self.checkbox_an_7,7)
+            # self.bg.addButton(self.checkbox_an_7,7)
             # self.bg.addButton(self.checkbox_an_8,8)
             
 
@@ -1366,11 +1870,82 @@ def start():
             # combine layouts together
             
             plot_layout = QtWidgets.QVBoxLayout()
-            toolbar = NavigationToolbar( self.canvas, self)
+            tnav = NavigationToolbar( self.canvas, self)
+            
+            toolbar = QtWidgets.QToolBar()
+        
+
+            # toolbar.addAction('test')
+            # toolbar.addWidget(button_plot_prevspectro)
+            # toolbar.addWidget(button_plot_spectro)
+            
+            # b1=QtWidgets.QToolButton()
+            # b1.setText('<--Previous spectrogram')
+            # # b1.setStyleSheet("background-color: yellow; font-size: 18pt")
+            # b1.clicked.connect(plot_previous_spectro)      
+            # toolbar.addWidget(b1)
+
+            # b2=QtWidgets.QToolButton()
+            # b2.setText('Next spectrogram-->')
+            # b2.clicked.connect(plot_next_spectro)      
+            # toolbar.addWidget(b2)
+
+            # b3=QtWidgets.QToolButton()
+            # b3.setText('Play/Stop [spacebar]')
+            # b3.clicked.connect(func_playaudio)      
+            # toolbar.addWidget(b3)
+            
+            button_plot_prevspectro=QtWidgets.QPushButton('<--Previous spectrogram')
+            button_plot_prevspectro.clicked.connect(plot_previous_spectro)            
+            toolbar.addWidget(button_plot_prevspectro)
+            
+            ss='  '
+            toolbar.addWidget(QtWidgets.QLabel(ss))     
+            
+            button_plot_spectro=QtWidgets.QPushButton('Next spectrogram-->')
+            button_plot_spectro.clicked.connect(plot_next_spectro)
+            toolbar.addWidget(button_plot_spectro)
+
+            toolbar.addWidget(QtWidgets.QLabel(ss))     
+
+           
+            toolbar.addWidget(button_play_audio)
+            toolbar.addWidget(QtWidgets.QLabel(ss))     
+            
+            toolbar.addWidget(QtWidgets.QLabel('Playback speed:'))        
+            toolbar.addWidget(QtWidgets.QLabel(ss))     
+            toolbar.addWidget(self.playbackspeed)
+            toolbar.addWidget(QtWidgets.QLabel(ss))     
+
+            toolbar.addSeparator()
+            toolbar.addWidget(QtWidgets.QLabel(ss))     
+         
+
+            toolbar.addWidget(QtWidgets.QLabel('fft_size[bits]:'))
+            toolbar.addWidget(QtWidgets.QLabel(ss))     
+            toolbar.addWidget(self.fft_size) 
+            toolbar.addWidget(QtWidgets.QLabel(ss))     
+            toolbar.addWidget(QtWidgets.QLabel('fft_overlap[0-1]:'))
+            toolbar.addWidget(QtWidgets.QLabel(ss))     
+            toolbar.addWidget(self.fft_overlap) 
+            
+            toolbar.addWidget(QtWidgets.QLabel(ss))     
+
+            
+            toolbar.addWidget(QtWidgets.QLabel('Colormap:'))
+            toolbar.addWidget(QtWidgets.QLabel(ss))     
+            toolbar.addWidget( self.colormap_plot)  
+            toolbar.addWidget(QtWidgets.QLabel(ss))     
+            
+            toolbar.addSeparator()
+         
+            toolbar.addWidget(tnav)
+
+            
             plot_layout.addWidget(toolbar)
             plot_layout.addWidget(self.canvas)
             
-            outer_layout.addLayout(top_layout)
+            # outer_layout.addLayout(top_layout)
             outer_layout.addLayout(top2_layout)
             outer_layout.addLayout(top3_layout)
 

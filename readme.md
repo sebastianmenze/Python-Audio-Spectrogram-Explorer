@@ -6,20 +6,20 @@
 
 - Navigate through the spectrograms and listen in to selected areas in the spectrogram (adjustable playback speeds)
 
-- Export selected areas in the spectrogram as .wav files
+- Export selected area in the spectrogram as .wav file, .csv table or .mp4 video 
 
 - Annotate areas in the spectrograms with custom labels and log each annotation's time-stamp and frequency 
 
 - Export spectrograms as image files and automatically plot spectrograms for all selected files 
 
-- Draw shapes of signals in the spectrogram and save them as csv files 
+- Draw shapes in the spectrogram and save them as .csv file 
 
-- Automatically detect signals using drawn shape templates
+- Automatically detect signals using spectrogram correlation or shapematching
 
-  ![screenshots/s1](screenshots/s1.JPG)
+  ![screenshots/s1](screenshots/m1.JPG)
 
 ## How to install and start the program:
-You can either download an executable or start the program by using the python source code. The windows executable is included in this repository (You can download it as .zip file).
+You can either download the windows executable or start the program using the python source code. The windows executable is included in this release, it cannot be used to export videos but has all the other functions.
 
 A platform independent way to start the program is run the source code directly in python. To download PASE use this command:
 
@@ -34,7 +34,7 @@ import pase
 pase.pase.start()
 ```
 
-This program uses PyQT5 as GUI framework and numpy, scipy, pandas and matplotlib to manipulate and visualize the data. The module `simpleaudio` is used to playback sound. In case you are getting an error message due to a missing module, simply copy the module's name and install it using pip, for example `pip install simpleaudio` and `pip install soundfile`.
+This program uses PyQT5 as GUI framework and numpy, scipy, pandas and matplotlib to manipulate and visualize the data. The module `simpleaudio` is used to playback sound and `moviepy` to generated videos. In case you are getting an error message due to a missing module, simply copy the module's name and install it using pip, for example `pip install simpleaudio` and `pip install soundfile`.
 
 ## How to use it:
 
@@ -42,16 +42,18 @@ This program uses PyQT5 as GUI framework and numpy, scipy, pandas and matplotlib
 
 The currently supported audio file types are: .wav .aif .aiff .aifc .ogg .flac
 
-To get started, you first have to decide if you want to use real time-stamps (year-month-day hour:minute:seconds) or not. For simply looking at the spectrograms and exploring your audio-files, you do not need the real time-stamps. But as soon as you want to annotate your data, the program needs to know when each .wav file started recording. The default is using real time-stamps. 
+To get started, you first have to decide if you want to use real time-stamps (year-month-day hour:minute:seconds) or not. For simply looking at the spectrograms and exploring your audio-files, you do not need the real time-stamps. But as soon as you want to annotate your data, the program needs to know when each .wav file started recording based on the file names. The default is using real time-stamps. 
 
 **Without timestamps:**
-- Delete the content of the field "filename key:"    
-- Press the "Open .wav files" button
+
+- Delete the content of the field "Timestamp:"    
+- Press the "Open files" button in the Menu
 
 **With timestamps:**
-- The start date and time of each recoding should be contained in the .wav file name
 
-- Adjust the "filename key:" field so that the program recognizes the correct time-stamp. For example: `aural_%Y_%m_%d_%H_%M_%S.wav` or `%y%m%d_%H%M%S_AU_SO02.wav` Where %Y is year, %m is month, %d is day and so on.   Here is a list of the format strings:
+- The start date and time of each recoding should be contained in the audio file name
+
+- Adjust the "Timestamp:" field so that the program recognizes the correct time-stamp. For example: `aural_%Y_%m_%d_%H_%M_%S.wav` or `%y%m%d_%H%M%S_AU_SO02.wav` Where %Y is year, %m is month, %d is day and so on.   Here is a list of the format strings:
 
   | **Directive** | **Meaning**                                                  | **Example**              |
   | ------------- | ------------------------------------------------------------ | ------------------------ |
@@ -79,7 +81,7 @@ To get started, you first have to decide if you want to use real time-stamps (ye
   | `%j`          | Day of the year as a zero-padded decimal number.             | 001, 002, ..., 366       |
   | `%-j`         | Day of the year as a decimal number.                         | 1, 2, ..., 366           |
 
-- Press the "Open .wav files" button and select your .wav files with the dialogue.
+- Press the "Open files" button and select your audio files with the dialogue.
 
 ### Plot and browse spectrograms 
 - Select the spectrogram setting of your choice:
@@ -88,27 +90,25 @@ To get started, you first have to decide if you want to use real time-stamps (ye
     - The length (x-axis) of each spectrogram in seconds. If the field is left empty the spectrogram will be the length of the entire .wav file. 
     - The FFT size determines the spectral resolution. The higher it is, the more detail you will see in the lower part of the spectrogram, with less detail in the upper part 
     - The minimum and maximum dB values for the spectrogram color, will be determined automatically if left empty
-    - The colormap from a dropdown menu
+    - The colormap from a dropdown menu, below are examples for the black and white colormap called "gist_yarg".
+
 - Press next spectrogram (The Shortkey for this is the right arrow button)
-- You can now navigate between the spectrograms using the "next/previous spectrogram" buttons or the left and right arrow keys. The time-stamp or filename of the current .wav file is displayed as title. 
-- You can zoom and pan using the magnifying glass symbol in the matplotlib toolbar, where you can also save the spectrogram as image file. 
+- You can now navigate between the spectrograms using the "next/previous spectrogram" buttons or the left and right arrow keys. The time-stamp or filename of the current audio file is displayed as title. 
+- You can zoom and pan using the magnifying glass symbol in the matplotlib toolbar, where you can also save the spectrogram as image file (square save button). 
 - Once you have reached the final spectrogram, the program will display a warning
 
-Here is an example for the black and white colormap called "gist_yarg"
- ![screenshots/s3](screenshots/s3.JPG)
-
 ### Play audio and adjust playback speed, export the selected sound as .wav
-- Press the "Play/Stop" button or the spacebar to play the .wav file.
+- Press the "Play/Stop" button or the spacebar to play the current selection of your audio file.
 - The program will only play what is visible in the current spectrogram (Sound above and below the frequency limits is filtered out)
 - To listen to specific sounds, zoom in using the magnifying glass
-- To listen to sound below or above the human hearing range, adjust the playback speed and press the Play button again.   
-- To export the sound you selected as .wav file, press the "Export selected audio" button
+- To listen to sound below or above the human hearing range, adjust the playback speed and press the "Play" button again.   
+- To export the sound you selected as .wav file, press  "Export" in the Menu and selected "Spectrogram as .wav file"
 
 ### Automatically plot spectrograms of multiple .wav files 
 
-- Select your .wav files with the "Open .wav files" button
+- Select your audio files with the "Open files" button
 - Select the spectrogram settings of your choice
-- Press the "Plot all spectrograms" button and confirm the pop-up question
+- Press  "Export" in the Menu and select "All files as spectrogram images"
 - The spectrograms will be saved as .jpg files with the same filename and location as your .wav files. 
 
 ### Annotate the spectrograms
@@ -117,7 +117,7 @@ Here is an example for the black and white colormap called "gist_yarg"
 
 - Now you can either choose to log you annotations in real time or save them later. I recommend using the "real-time logging" option. 
 
-- Press the "real-time logging" check-box. Now the program will look if there are already log files existing for each .wav file. Log files are named by adding "_log.csv" to the .wav filename, for example "aural_2017_02_12_22_40_00_log.csv". You can choose to overwrite these log files. If you do not choose to overwrite them, the program ignores .wav files that already have and existing log file. This is useful if you want to work on a dataset over several sessions. 
+- Press the "real-time logging" check-box. Now the program will look if there are already log files existing for each audio file. Log files are named by adding "_log.csv" to the .wav filename, for example "aural_2017_02_12_22_40_00_log.csv". You can choose to overwrite these log files. If you do not choose to overwrite them, the program ignores audio files that already have an existing log file. This is useful if you want to work on a dataset over several sessions. 
 
 - Now you can choose custom (or preset) labels for your annotations by changing the labels in the row "Annotation labels". If no label is selected (using the check-boxes) an empty string will be used as label. 
 
@@ -134,23 +134,34 @@ Here is an example for the black and white colormap called "gist_yarg"
 | 0    | 2016-04-09 19:25:47.49 |2016-04-09 19:25:49.49  | 17.313 | 20.546   | FW_20_Hz  |
 | 1    | 2016-05-10 17:36:13.94 | 2016-05-10 17:38:13.94 | 27.59109  | 34.57 | BW_Z_call |
 
-- If you want to save your annotations separately, press the "Save annotation csv" button
+- If you want to save your annotations separately, press "Export" in the menu and choose "Annotations as .csv table" 
 
 ### Remove the background from spectrogram
 
 This feature can be useful to detect sounds hidden in background noise. It subtracts the average spectrum from the current spectrogram, so that the horizontal noise lines and slope in background noise disappear. To active this function toggle the checkbox called "Remove background".  For optimal use, test different dB minimum setting. Here is an example for the spectrogram shown above:
-  ![screenshots/s2](screenshots/s2.JPG)
 
-### Draw shape and export as csv file
-- Press the "Draw shape" button
+![screenshots/s2](screenshots/m2.JPG)
+
+### Animated spectrogram videos
+
+You can use the python console based version of PASE to generate a video (.mp4 files) of the spectrogram with a moving bar. Here is an example:
+
+<video src="screenshots/minke_video.mp4"></video>
+
+- zoom into the desired area of the spectrogram and press "Export" in the menu and select "Spectrogram as animated video"
+- Wait while the video is generated (might take a few minutes depending on the spectrogram size)
+
+### Draw shape and export as .csv file
+
+![screenshots/s4](screenshots/m3.JPG)
+
+- Press the "Draw" button in the menu
 
 - now you can draw a line by adding points with a double left click and removing them with a right click
 
 - to save the shape as .csv file and exit the drawing mode press ENTER
 
 - now you are back in the normal annotation mode
-
-  ![screenshots/s4](screenshots/s4.JPG)
   
 - the .csv file is structured as follows:
 
@@ -160,28 +171,42 @@ This feature can be useful to detect sounds hidden in background noise. It subtr
 | 1    | 49.224946 | 166.780047      |
 | 2    | 49.221929 | 147.346955      |
 
-### Automatically detect signals using drawn shape templates
+### Automatic signal detection
 
-You can now use the shapes.csv file from above, to automatically detect patterns that are very similar to your hand drawn template. I implemented two detection methods so far:
+You can use two automatic detections methods to detect sounds that are very similar to a selected template:
 
 **Shapematching** https://github.com/sebastianmenze/Marine-mammal-call-detection-using-spectrogram-shape-matching
 
-and **Spectrogram correlation** https://github.com/sebastianmenze/Spectrogram-correlation-tutorial
+- Draw a template shape based on an example signal and save the .csv file (example for a minke whale calls shown above)
 
-- To automatically detect calls based on a template press either the "Shapematching"  or "Spectrogram correlation" button
-- load the template (.csv file) of your choice.  
-- For the shapematching, select a signal-to-noise dB threshold, usually between 3 and 10 dB, depending on the strength of the signal and amount of noise 
-- For the spectrogram correlation, choose a detection threshold (between 0 and 1)
+- Press "Automatic detection" in the menu an select shapematching (on either the current or all audio files)
+- load the template (.csv file) of your choice
+- select a signal-to-noise dB threshold, usually between 3 and 10 dB, depending on the strength of the signal and amount of noise 
+- The spectrogram will now display the bounding boxes of detected signals, with the score displayed in the upper left corners
+- You can export the automatic detections (including some more metadata) as .csv file in the "Export" menu under "Automatic detections as .csv file"
+- To clear the automatic detections, press any of the "Automatic detection"  buttons but than press "Cancel" instead of opening a template file
+
+or **Spectrogram correlation** https://github.com/sebastianmenze/Spectrogram-correlation-tutorial
+
+- Here the template can either be a shape or a 2-D image table
+- To use a shape, use the "draw" mode and save the .csv file (example for a minke whale calls shown above)
+
+- To use a 2-D table, zoom into the spectrogram so your selection contains only the desired signal and press "Export" in the menu and select "Spectrogram as .csv table"
+- To start the automatic detections, press "Automatic detection" in the menu and select spectrogram correlation (on either the current or all audio files)
+- Select a template .csv file (shape or table)
+- Choose a detection threshold (correlation score r between 0 and 1)
+
 - The spectrogram will now display the bounding boxes of detected signals, with the score displayed in the upper left corners
 - You can export the automatic detections including some more metadata as .csv file using the "Export auto-detec" button
-- To clear the automatic detections, press the "Automatic detection" button but than press "Cancel" instead of opening a template file
+- To clear the automatic detections, press any of the "Automatic detection"  buttons but than press "Cancel" instead of opening a template file
 
-![autodetect4](screenshots/autodetect4.JPG)
+Here is an example for the Ant. Minke whale calls:![autodetect4](screenshots/m6.JPG)
 
 Example result for the shapematching:
 
-![autodetect3](screenshots/autodetect3.JPG)
+![autodetect3](screenshots/m4.JPG)
 
 Example result for the spectrogram correlation:
 
-![scorr1](screenshots/scorr1.jpeg)
+![autodetect3](screenshots/m5.JPG)
+
