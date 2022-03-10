@@ -146,6 +146,11 @@ This feature can be useful to detect sounds hidden in background noise. It subtr
 
 You can use the python console based version of PASE to generate a video (.mp4 files) of the spectrogram with a moving bar. Here is an example:
 
+![Watch the video](https://youtu.be/x3_kFesvw5I)
+
+
+https://youtu.be/x3_kFesvw5I
+
 <video src="screenshots/minke_video.mp4"></video>
 
 - zoom into the desired area of the spectrogram and press "Export" in the menu and select "Spectrogram as animated video"
