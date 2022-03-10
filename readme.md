@@ -19,7 +19,7 @@
   ![screenshots/s1](screenshots/m1.JPG)
 
 ## How to install and start the program:
-You can either download the windows executable or start the program using the python source code. The windows executable is included in this release, it cannot be used to export videos but has all the other functions.
+You can either download the windows executable (found here under "Release" and "PASE") or start the program using the python source code. The windows executable is included in this release, it cannot be used to export videos but has all the other functions.
 
 A platform independent way to start the program is run the source code directly in python. To download PASE use this command:
 
