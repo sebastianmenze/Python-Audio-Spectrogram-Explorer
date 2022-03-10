@@ -1,5 +1,7 @@
 ![pase_icon](screenshots/pase_icon.png)
 # Python Audio Spectrogram Explorer (PASE)
+[![DOI](https://zenodo.org/badge/403931857.svg)](https://zenodo.org/badge/latestdoi/403931857)
+
 ### What you can do with this program:
 
 - Visualize audio files as spectrograms
