@@ -129,7 +129,7 @@ def start():
             
             
             self.filename_timekey = QtWidgets.QLineEdit(self)
-            self.filename_timekey.setText('aural_%Y_%m_%d_%H_%M_%S.wav')       
+            # self.filename_timekey.setText('aural_%Y_%m_%d_%H_%M_%S.wav')       
      
             self.playbackspeed = QtWidgets.QComboBox(self)
             self.playbackspeed.addItem('0.5')        
@@ -149,7 +149,7 @@ def start():
             self.cid1=None
             self.cid2=None
             
-            self.plotwindow_startsecond=0
+            self.plotwindow_startsecond= float( self.t_length.text() )
             # self.plotwindow_length=120
             self.filecounter=-1
             self.filenames=np.array( [] )
@@ -270,6 +270,8 @@ def start():
                 self.patches = patches    
                 self.p_t_dict = p_t_dict    
                 self.p_f_dict = p_f_dict    
+                
+                self.region_labels=labels
 
                 # return df, patches,p_t_dict,p_f_dict         
 
@@ -357,15 +359,18 @@ def start():
                 df['score'] =score_ioubox * (smc_rs-.5)/.5
                 
                 self.detectiondf = df.copy()    
-              
-                   
+                
             def automatic_detector_specgram_corr():
                 # open template
                 self.detectiondf=pd.DataFrame([])
                 
-                templatefile, ok1 = QtWidgets.QFileDialog.getOpenFileName(self,"QFileDialog.getOpenFileNames()", r"C:\Users","CSV file (*.csv)")
+                templatefiles, ok1 = QtWidgets.QFileDialog.getOpenFileNames(self,"QFileDialog.getOpenFileNames()", r"C:\Users","CSV file (*.csv)")
                 if ok1:
-                    template=pd.read_csv(templatefile,index_col=0)
+
+                    templates=[]
+                    for fnam in templatefiles:
+                       template=pd.read_csv(fnam,index_col=0)
+                       templates.append( template )
                     
                     corrscore_threshold, ok = QtWidgets.QInputDialog.getDouble(self, 'Input Dialog',
                                                     'Enter correlation threshold in (0-1):',decimals=2)
@@ -374,14 +379,22 @@ def start():
                     if corrscore_threshold<0:
                         corrscore_threshold=0
                         
-                    if template.columns[0]=='Time_in_s': 
+                    if templates[0].columns[0]=='Time_in_s': 
                          
                             # print(template)
                         offset_f=10
-                        offset_t=0.5                  
-                        shape_f=template['Frequency_in_Hz'].values
-                        shape_t=template['Time_in_s'].values
-                        shape_t=shape_t-shape_t.min()
+                        offset_t=0.5    
+                        
+                        # shape_f=template['Frequency_in_Hz'].values
+                        # shape_t=template['Time_in_s'].values
+                        # shape_t=shape_t-shape_t.min()
+                        shape_f=np.array([])
+                        shape_t_raw=np.array([])
+                        for template in templates:            
+                            shape_f=np.concatenate( [shape_f, template['Frequency_in_Hz'].values ] )
+                            shape_t_raw=np.concatenate( [shape_t_raw, template['Time_in_s'].values ])
+                        shape_t=shape_t_raw-shape_t_raw.min()
+                        
                         
                         f_lim=[ shape_f.min() - offset_f ,  shape_f.max() + offset_f ]
                         k_length_seconds=shape_t.max()+offset_t*2
@@ -401,10 +414,20 @@ def start():
                         # find wich grid points are inside the shape
                         x, y = kk_t.flatten(), kk_f.flatten()
                         points = np.vstack((x,y)).T 
-                        p = Path(list(zip(shape_t, shape_f))) # make a polygon
-                        grid = p.contains_points(points)
-                        mask = grid.reshape(kk_t.shape) # now you have a mask with points inside a polygon  
-                        kernel[mask]=kernel_signal_db
+                        # p = Path(list(zip(shape_t, shape_f))) # make a polygon
+                        # grid = p.contains_points(points)
+                        # mask = grid.reshape(kk_t.shape) # now you have a mask with points inside a polygon  
+                        # kernel[mask]=kernel_signal_db
+                        for template in templates:       
+                            shf= template['Frequency_in_Hz'].values 
+                            st= template['Time_in_s'].values 
+                            st=st-shape_t_raw.min()
+                            p = Path(list(zip(st, shf))) # make a polygon
+                            grid = p.contains_points(points)
+                            kern = grid.reshape(kk_t.shape) # now you have a mask with points inside a polygon  
+                            kernel[kern>0]=kernel_signal_db   
+                    # print(kernel_rs)
+                    
                         
                         ix_f=np.where((self.f>=f_lim[0]) & (self.f<=f_lim[1]))[0]
                         spectrog =10*np.log10( self.Sxx[ ix_f[0]:ix_f[-1],: ] )
@@ -448,7 +471,8 @@ def start():
                             plot_spectrogram()
                     else:  # image kernel
    
-
+                        template=templates[0]
+                        
                         k_length_seconds= float(template.columns[-1]) -float(template.columns[0])
                         
                         f_lim=[ int(template.index[0]) , int( template.index[-1] )]
@@ -503,16 +527,19 @@ def start():
             def automatic_detector_specgram_corr_allfiles():
                msg = QtWidgets.QMessageBox()
                msg.setIcon(QtWidgets.QMessageBox.Information)   
-               msg.setText("Are you sure you want to run the detector over "+ str(self.filenames.shape[0]) +" ?")
+               msg.setText("Are you sure you want to run the detector over "+ str(self.file_blocks.shape[0]) +" ?")
                msg.setStandardButtons(QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No)
                returnValue = msg.exec()
 
                if returnValue == QtWidgets.QMessageBox.Yes:
                    
-                templatefile, ok1 = QtWidgets.QFileDialog.getOpenFileName(self,"QFileDialog.getOpenFileNames()", r"C:\Users","CSV file (*.csv)")
+                templatefiles, ok1 = QtWidgets.QFileDialog.getOpenFileNames(self,"QFileDialog.getOpenFileNames()", r"C:\Users","CSV file (*.csv)")
                 if ok1:
-                    template=pd.read_csv(templatefile,index_col=0)
-                    
+                    templates=[]
+                    for fnam in templatefiles:
+                       template=pd.read_csv(fnam,index_col=0)
+                       templates.append( template )
+                                        
                     corrscore_threshold, ok = QtWidgets.QInputDialog.getDouble(self, 'Input Dialog',
                                                     'Enter correlation threshold in (0-1):',decimals=2)
                     if corrscore_threshold>1:
@@ -522,7 +549,10 @@ def start():
                         
                     self.detectiondf_all=pd.DataFrame([])
                 
-                    for audiopath in self.filenames:
+                    for i_block in range(len(self.file_blocks)):
+                        
+                        audiopath=self.file_blocks.loc[i_block,'fname']
+                        
                         
                         if self.filename_timekey.text()=='':
                             self.time= dt.datetime(2000,1,1,0,0,0)
@@ -532,7 +562,12 @@ def start():
                             except:
                                 self.time= dt.datetime(2000,1,1,0,0,0)
                                 
-                        self.x,self.fs  =  sf.read(audiopath,dtype='int16')
+                        if self.file_blocks.loc[i_block,'start']>0:           
+                             secoffset = self.file_blocks.loc[self.filecounter,'start'] / self.fs
+                             self.time=self.time + pd.Timedelta(seconds=secoffset)
+                                 
+                                
+                        self.x,self.fs  =  sf.read(audiopath,dtype='int16', start=self.file_blocks.loc[i_block,'start'] , stop=self.file_blocks.loc[i_block,'end'])
                         print('open new file: '+audiopath)
                         
                         db_saturation=float( self.db_saturation.text() )
@@ -543,18 +578,27 @@ def start():
                         fft_overlap=float(  self.fft_overlap.currentText() )
                         
                         self.f, self.t, self.Sxx = signal.spectrogram(p, self.fs, window='hamming',nperseg=fft_size,noverlap=fft_size*fft_overlap)
-                       
+                        if self.file_blocks.loc[i_block,'start']>0:     
+                            secoffset = self.file_blocks.loc[i_block,'start'] / self.fs
+                            self.t=  self.t + secoffset     
+                                                   
                         # self.plotwindow_startsecond=0
                         # self.plotwindow_length = self.t.max()
                 
-                        if template.columns[0]=='Time_in_s': 
+                        if templates[0].columns[0]=='Time_in_s': 
                             
                             # print(template)
                             offset_f=10
                             offset_t=0.5                  
-                            shape_f=template['Frequency_in_Hz'].values
-                            shape_t=template['Time_in_s'].values
-                            shape_t=shape_t-shape_t.min()
+                             # shape_f=template['Frequency_in_Hz'].values
+                            # shape_t=template['Time_in_s'].values
+                            # shape_t=shape_t-shape_t.min()
+                            shape_f=np.array([])
+                            shape_t_raw=np.array([])
+                            for template in templates:            
+                                shape_f=np.concatenate( [shape_f, template['Frequency_in_Hz'].values ] )
+                                shape_t_raw=np.concatenate( [shape_t_raw, template['Time_in_s'].values ])
+                            shape_t=shape_t_raw-shape_t_raw.min()
                             
                             f_lim=[ shape_f.min() - offset_f ,  shape_f.max() + offset_f ]
                             k_length_seconds=shape_t.max()+offset_t*2
@@ -574,10 +618,18 @@ def start():
                             # find wich grid points are inside the shape
                             x, y = kk_t.flatten(), kk_f.flatten()
                             points = np.vstack((x,y)).T 
-                            p = Path(list(zip(shape_t, shape_f))) # make a polygon
-                            grid = p.contains_points(points)
-                            mask = grid.reshape(kk_t.shape) # now you have a mask with points inside a polygon  
-                            kernel[mask]=kernel_signal_db
+                            # p = Path(list(zip(shape_t, shape_f))) # make a polygon
+                            # grid = p.contains_points(points)
+                            # mask = grid.reshape(kk_t.shape) # now you have a mask with points inside a polygon  
+                            # kernel[mask]=kernel_signal_db
+                            for template in templates:       
+                                shf= template['Frequency_in_Hz'].values 
+                                st= template['Time_in_s'].values 
+                                st=st-shape_t_raw.min()
+                                p = Path(list(zip(st, shf))) # make a polygon
+                                grid = p.contains_points(points)
+                                kern = grid.reshape(kk_t.shape) # now you have a mask with points inside a polygon  
+                                kernel[kern>0]=kernel_signal_db   
                             
                             ix_f=np.where((self.f>=f_lim[0]) & (self.f<=f_lim[1]))[0]
                             spectrog =10*np.log10( self.Sxx[ ix_f[0]:ix_f[-1],: ] )
@@ -617,7 +669,9 @@ def start():
                                 self.detectiondf = df.copy()  
                                 self.detectiondf['audiofilename']= audiopath 
                                 self.detectiondf['threshold']= corrscore_threshold 
-                        else:  # image kernel
+                        else:  # image kernel                        
+                            template=templates[0]
+                            
                             k_length_seconds= float(template.columns[-1]) -float(template.columns[0])
                             
                             f_lim=[ int(template.index[0]) , int( template.index[-1] )]
@@ -675,116 +729,106 @@ def start():
                         
                     self.detectiondf= self.detectiondf_all   
                     # self.detectiondf=self.detectiondf.reset_index(drop=True)
+                    read_wav()
+                    plot_spectrogram()
                     print('done!!!')
 
+                    
             def automatic_detector_shapematching():
                 # open template
                 self.detectiondf=pd.DataFrame([])
                 
                 templatefile, ok1 = QtWidgets.QFileDialog.getOpenFileName(self,"QFileDialog.getOpenFileNames()", r"C:\Users","CSV file (*.csv)")
-                if ok1:
+                if ok1:               
                     template=pd.read_csv(templatefile,index_col=0)
-                    
-                    if template.columns[0]=='Time_in_s': 
-                        # print(template)
-                        
-                        # set db threshold   
-                        db_threshold, ok = QtWidgets.QInputDialog.getInt(self, 'Input Dialog',
-                                                        'Enter signal-to-noise threshold in dB:')
-                        if ok:
-                            print(db_threshold)
-                            self.detectiondf=pd.DataFrame([])
-        
-                            find_regions(db_threshold)            
-                            match_bbox_and_iou(template)    
-                            ixdel=np.where(self.detectiondf['score']<0.01)[0]
-                            self.detectiondf=self.detectiondf.drop(ixdel)
-                            self.detectiondf=self.detectiondf.reset_index(drop=True)
-                            self.detectiondf['audiofilename']= self.current_audiopath 
-                            self.detectiondf['threshold']= db_threshold 
-        
-                            print(self.detectiondf)
-                
-                            # plot results
-                            plot_spectrogram()
-                    else:
-                           msg = QtWidgets.QMessageBox()
-                           msg.setIcon(QtWidgets.QMessageBox.Information)   
-                           msg.setText("Wrong template format")
-                           msg.setStandardButtons(QtWidgets.QMessageBox.Ok)
-                           returnValue = msg.exec()
-                                   
+
+                    # print(template)
+                    # set db threshold   
+                    db_threshold, ok = QtWidgets.QInputDialog.getInt(self, 'Input Dialog',
+                                                    'Enter signal-to-noise threshold in dB:')
+                    if ok:
+                        print(db_threshold)
+                        self.detectiondf=pd.DataFrame([])
+
+                        find_regions(db_threshold)            
+                        match_bbox_and_iou(template)    
+                        ixdel=np.where(self.detectiondf['score']<0.01)[0]
+                        self.detectiondf=self.detectiondf.drop(ixdel)
+                        self.detectiondf=self.detectiondf.reset_index(drop=True)
+                        self.detectiondf['audiofilename']= self.current_audiopath 
+                        self.detectiondf['threshold']= db_threshold 
+
+                        print(self.detectiondf)
+            
+                        # plot results
+                        plot_spectrogram()
                         
             def automatic_detector_shapematching_allfiles():
                msg = QtWidgets.QMessageBox()
                msg.setIcon(QtWidgets.QMessageBox.Information)   
-               msg.setText("Are you sure you want to run the detector over "+ str(self.filenames.shape[0]) +"files ?")
+               msg.setText("Are you sure you want to run the detector over "+ str(self.filenames.shape[0]) +" ?")
                msg.setStandardButtons(QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No)
                returnValue = msg.exec()
-    
+
                if returnValue == QtWidgets.QMessageBox.Yes:
                     templatefile, ok1 = QtWidgets.QFileDialog.getOpenFileName(self,"QFileDialog.getOpenFileNames()", r"C:\Users","CSV file (*.csv)")
-                    template=pd.read_csv(templatefile,index_col=0)
-                    
+                    template=pd.read_csv(templatefile)
+                    db_threshold, ok = QtWidgets.QInputDialog.getInt(self, 'Input Dialog',
+                                                    'Enter signal-to-noise threshold in dB:')                   
+                   
                     self.detectiondf_all=pd.DataFrame([])
-                 
-                    
-                    if template.columns[0]=='Time_in_s': 
-    
-                        db_threshold, ok = QtWidgets.QInputDialog.getInt(self, 'Input Dialog',
-                                                        'Enter signal-to-noise threshold in dB:')                   
-                                          
-                        for audiopath in self.filenames:
-                                            
-                            if self.filename_timekey.text()=='':
+                   
+                    for i_block in range(len(self.file_blocks)):
+                        
+                        audiopath=self.file_blocks.loc[i_block,'fname']
+                        
+                                                                
+                        if self.filename_timekey.text()=='':
+                            self.time= dt.datetime(2000,1,1,0,0,0)
+                        else:  
+                            try:
+                                self.time= dt.datetime.strptime( audiopath.split('/')[-1], self.filename_timekey.text() )
+                            except:
                                 self.time= dt.datetime(2000,1,1,0,0,0)
-                            else:  
-                                try:
-                                    self.time= dt.datetime.strptime( audiopath.split('/')[-1], self.filename_timekey.text() )
-                                except:
-                                    self.time= dt.datetime(2000,1,1,0,0,0)
-                                    
-                            self.x,self.fs  =  sf.read(audiopath,dtype='int16')
-                            print('open new file: '+audiopath)
+                                
+                        self.x,self.fs  =  sf.read(audiopath,dtype='int16', start=self.file_blocks.loc[i_block,'start'] , stop=self.file_blocks.loc[i_block,'end'])
+                        print('open new file: '+audiopath)
+                        
+                        db_saturation=float( self.db_saturation.text() )
+                        x=self.x/32767 
+                        p =np.power(10,(db_saturation/20))*x #convert data.signal to uPa    
+                        
+                        fft_size=int( self.fft_size.currentText() )
+                        fft_overlap=float(  self.fft_overlap.currentText() )
+                        
+                        self.f, self.t, self.Sxx = signal.spectrogram(p, self.fs, window='hamming',nperseg=fft_size,noverlap=fft_size*fft_overlap)
+                        if self.file_blocks.loc[i_block,'start']>0:     
+                            secoffset = self.file_blocks.loc[i_block,'start'] / self.fs
+                            self.t=  self.t + secoffset     
                             
-                            db_saturation=float( self.db_saturation.text() )
-                            x=self.x/32767 
-                            p =np.power(10,(db_saturation/20))*x #convert data.signal to uPa    
-                            
-                            fft_size=int( self.fft_size.currentText() )
-                            fft_overlap=float(  self.fft_overlap.currentText() )
-                            
-                            self.f, self.t, self.Sxx = signal.spectrogram(p, self.fs, window='hamming',nperseg=fft_size,noverlap=fft_size*fft_overlap)
-                           
-                            self.plotwindow_startsecond=0
-                            self.plotwindow_length = self.t.max()
-                    
-                            self.detectiondf=pd.DataFrame([])
-        
-                            find_regions(db_threshold)            
-                            match_bbox_and_iou(template)    
-                            ixdel=np.where(self.detectiondf['score']<0.01)[0]
-                            self.detectiondf=self.detectiondf.drop(ixdel)
-                            self.detectiondf=self.detectiondf.reset_index(drop=True)
-                            self.detectiondf['audiofilename']= audiopath
-                            self.detectiondf['threshold']= db_threshold 
-        
-                            self.detectiondf_all=pd.concat([ self.detectiondf_all,self.detectiondf ])
-                            self.detectiondf_all=self.detectiondf_all.reset_index(drop=True)
-        
-                            print(self.detectiondf_all)
-                    else:
-                           msg = QtWidgets.QMessageBox()
-                           msg.setIcon(QtWidgets.QMessageBox.Information)   
-                           msg.setText("Wrong template format")
-                           msg.setStandardButtons(QtWidgets.QMessageBox.Ok)
-                           returnValue = msg.exec()                    
+                        self.plotwindow_startsecond=0
+                        self.plotwindow_length = self.t.max()
+                
+                        self.detectiondf=pd.DataFrame([])
+
+                        find_regions(db_threshold)            
+                        match_bbox_and_iou(template)    
+                        ixdel=np.where(self.detectiondf['score']<0.01)[0]
+                        self.detectiondf=self.detectiondf.drop(ixdel)
+                        self.detectiondf=self.detectiondf.reset_index(drop=True)
+                        self.detectiondf['audiofilename']= audiopath
+                        self.detectiondf['threshold']= db_threshold 
+
+                        self.detectiondf_all=pd.concat([ self.detectiondf_all,self.detectiondf ])
+                        self.detectiondf_all=self.detectiondf_all.reset_index(drop=True)
+
+                        print(self.detectiondf_all)
+                        
                         
                     self.detectiondf= self.detectiondf_all   
                     # self.detectiondf=self.detectiondf.reset_index(drop=True)
                     print('done!!!')
-                                     
-
+                 
             def export_automatic_detector_shapematching():
                 if self.detectiondf.shape[0]>0:
                     savename = QtWidgets.QFileDialog.getSaveFileName(self,"QFileDialog.getSaveFileName()", r"C:\Users", "csv files (*.csv)")
@@ -794,14 +838,17 @@ def start():
 
             openfilebutton=QtWidgets.QPushButton('Open files')
             def openfilefunc():
-                self.filecounter=-1         
+                self.filecounter=-1   
+                self.plotwindow_startsecond= float( self.t_length.text() )
+
                 self.annotation= pd.DataFrame({'t1': pd.Series(dtype='datetime64[ns]'),
                        't2': pd.Series(dtype='datetime64[ns]'),
                        'f1': pd.Series(dtype='float'),
                        'f2': pd.Series(dtype='float'),
                        'label': pd.Series(dtype='object'),
                        'audiofilename': pd.Series(dtype='object')})
-                
+                self.detectiondf=pd.DataFrame([])
+        
                 # self.annotation=pd.DataFrame(columns=['t1','t2','f1','f2','label'],dtype=[("t1", "datetime64[ns]"), ("t2", "datetime64[ns]"), ("f1", "float"), ("f2", "float"), ("label", "object")] )
                 
                 # annotation=pd.DataFrame(dtype=[("t1", "datetime64[ns]"), ("t2", "datetime64[ns]"), ("f1", "float"), ("f2", "float"), ("label", "object")] )
@@ -816,21 +863,61 @@ def start():
                 options = QtWidgets.QFileDialog.Options()
                 # options |= QtWidgets.QFileDialog.DontUseNativeDialog
                 self.filenames, _ = QtWidgets.QFileDialog.getOpenFileNames(self,"QFileDialog.getOpenFileNames()", r"C:\Users\a5278\Documents\passive_acoustics\detector_delevopment\detector_validation_subset","Audio Files (*.wav *.aif *.aiff *.aifc *.ogg *.flac)", options=options)
-                self.filenames = np.array( self.filenames )
-                print(self.filenames)
-                plot_next_spectro()
+                self.filenames = np.array( self.filenames )      
+                
+                if len(self.filenames)>0:                  
+                    fid_names=[]
+                    fid_start=[]
+                    fid_end=[]
+            
+                    max_element_length_sec=60*10
+    
+                    for fname in self.filenames:
+                        a = sf.info( fname )
+                        
+                        if a.duration < max_element_length_sec:
+                            fid_names.append( fname )
+                            fid_start.append( 0 )
+                            fid_end.append(a.frames )
+                        else: 
+    
+                            s=0
+                            while s < a.frames:
+                                fid_names.append( fname )
+                                fid_start.append( s )
+                                e =  s + max_element_length_sec * a.samplerate
+                                fid_end.append( e )
+                                s=s+max_element_length_sec * a.samplerate
+                                
+                    self.file_blocks = pd.DataFrame([])               
+                    self.file_blocks['fname']=fid_names
+                    self.file_blocks['start']=fid_start
+                    self.file_blocks['end']=fid_end
+            
+                    print( self.file_blocks)
+                    self.plotwindow_startsecond=0
+    
+                    plot_next_spectro()
+                    
             openfilebutton.clicked.connect(openfilefunc)
             
             
             def read_wav():
               if self.filecounter>=0:        
-                self.current_audiopath=self.filenames[self.filecounter]
+                self.current_audiopath=self.file_blocks.loc[self.filecounter,'fname']
                 
                 # if self.filename_timekey.text()=='':
                 #     self.time= dt.datetime(1,1,1,0,0,0)
                 # else:     
                 #     self.time= dt.datetime.strptime( audiopath.split('/')[-1], self.filename_timekey.text() )
                
+             
+                
+                # if audiopath[-4:]=='.wav':
+                    
+                    
+                self.x,self.fs  =  sf.read(self.current_audiopath, start=self.file_blocks.loc[self.filecounter,'start'] , stop=self.file_blocks.loc[self.filecounter,'end'], dtype='int16')
+
                 if self.filename_timekey.text()=='':
                     self.time= dt.datetime(2000,1,1,0,0,0)
                     #self.time= dt.datetime.now()
@@ -839,12 +926,11 @@ def start():
                         self.time= dt.datetime.strptime( self.current_audiopath.split('/')[-1], self.filename_timekey.text() )
                     except: 
                         print('wrongfilename')
-                
-                # if audiopath[-4:]=='.wav':
-                    
-                    
-                self.x,self.fs  =  sf.read(self.current_audiopath,dtype='int16')
-
+                 
+                if self.file_blocks.loc[self.filecounter,'start']>0:           
+                    secoffset = self.file_blocks.loc[self.filecounter,'start'] / self.fs
+                    self.time=self.time + pd.Timedelta(seconds=secoffset)
+                        
                 # if audiopath[-4:]=='.aif' | audiopath[-4:]=='.aiff' | audiopath[-4:]=='.aifc':
                 #     obj = aifc.open(audiopath,'r')
                 #     self.fs, self.x = wav.read(audiopath)     
@@ -865,7 +951,11 @@ def start():
                 fft_overlap=float(  self.fft_overlap.currentText() )
                 self.f, self.t, self.Sxx = signal.spectrogram(p, self.fs, window='hamming',nperseg=fft_size,noverlap=int(fft_size*fft_overlap))
                 # self.t=self.time +  pd.to_timedelta( t  , unit='s')           
-            
+                if self.file_blocks.loc[self.filecounter,'start']>0:     
+                    secoffset = self.file_blocks.loc[self.filecounter,'start'] / self.fs
+                    self.t=  self.t + secoffset     
+                # print(self.t)
+                
             def plot_annotation_box(annotation_row):
                 print('row:')
                 # print(annotation_row.dtypes)
@@ -912,11 +1002,11 @@ def start():
                 
                 if self.t_length.text()=='':
                     self.plotwindow_length= self.t[-1] 
-                    self.plotwindow_startsecond=0
+                    self.plotwindow_startsecond=self.t[0]
                 else:    
                     self.plotwindow_length=float( self.t_length.text() )
                     if self.t[-1]<self.plotwindow_length:
-                        self.plotwindow_startsecond=0
+                        self.plotwindow_startsecond=self.t[0]
                         self.plotwindow_length=self.t[-1]
                         
                 y1=int(self.f_min.text())    
@@ -941,7 +1031,7 @@ def start():
                 ix_time=np.where( (self.t>=t1) & (self.t<t2 ))[0]
                 ix_f=np.where((self.f>=y1) & (self.f<y2))[0]
                 # print(ix_time.shape)
-                # print(ix_f.shape)
+                print([self.t,t1,t2])
                 plotsxx= self.Sxx[ int(ix_f[0]):int(ix_f[-1]),int(ix_time[0]):int(ix_time[-1]) ] 
                 plotsxx_db=10*np.log10(plotsxx)
                 
@@ -1048,20 +1138,64 @@ def start():
                 self.canvas.draw()
                 self.cid1=self.canvas.fig.canvas.mpl_connect('button_press_event', onclick)
 
+                
+            def plot_spectrogram_threshold():
+             if self.filecounter>=0:
+                 
+                db_threshold, ok = QtWidgets.QInputDialog.getInt(self, 'Input Dialog',
+                                                    'Enter signal-to-noise threshold in dB:')
+                find_regions(db_threshold)   
+                self.detectiondf=pd.DataFrame([])
+                
+                # plot_spectrogram()
+                # self.canvas.axes2 = self.canvas.axes.twiny()
+
+                # self.canvas.axes2.contour( self.region_labels>0 , [0.5] , color='g')
+   
+                self.canvas.fig.clf() 
+                self.canvas.axes = self.canvas.fig.add_subplot(111)
+                
+                
+                self.canvas.axes.set_ylabel('Frequency [Hz]')
+                # self.canvas.axes.set_xlabel('Time [sec]')
+                if self.checkbox_logscale.isChecked():
+                    self.canvas.axes.set_yscale('log')
+                else:
+                    self.canvas.axes.set_yscale('linear')        
+                    
+     
+                
+                img=self.canvas.axes.imshow( self.region_labels>0 , aspect='auto',cmap='gist_yarg',origin = 'lower')
+                
+                self.canvas.fig.colorbar(img)
+                
+                self.canvas.fig.tight_layout()
+                self.canvas.draw()
+
 
             def export_zoomed_sgram_as_csv():
              if self.filecounter>=0:
                  
+                 
                     # filter out background
-                spectrog = 10*np.log10(self.Sxx )     
-                rectime= pd.to_timedelta( self.t ,'s')
-                spg=pd.DataFrame(np.transpose(spectrog),index=rectime)
-                bg=spg.resample('3min').mean().copy()
-                bg=bg.resample('1s').interpolate(method='time')
-                bg=    bg.reindex(rectime,method='nearest')
-                background=np.transpose(bg.values)   
-                z=spectrog-background
-     
+                spectrog = 10*np.log10(self.Sxx )  
+                
+                msg = QtWidgets.QMessageBox()
+                msg.setIcon(QtWidgets.QMessageBox.Information)   
+                msg.setText("Remove background?")
+                msg.setStandardButtons(QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No)
+                returnValue = msg.exec()
+                
+                if returnValue == QtWidgets.QMessageBox.Yes:
+                    rectime= pd.to_timedelta( self.t ,'s')
+                    spg=pd.DataFrame(np.transpose(spectrog),index=rectime)
+                    bg=spg.resample('3min').mean().copy()
+                    bg=bg.resample('1s').interpolate(method='time')
+                    bg=    bg.reindex(rectime,method='nearest')
+                    background=np.transpose(bg.values)   
+                    z=spectrog-background
+                else:    
+                    z=spectrog
                 
                 self.f_limits=self.canvas.axes.get_ylim()
                 self.t_limits=self.canvas.axes.get_xlim()
@@ -1156,24 +1290,26 @@ def start():
              if len(self.filenames)>0:
                 print('old filecounter is: '+str(self.filecounter))
                
-                if self.t_length.text()=='' or self.t[-1]<float(self.t_length.text()):
+                if self.t_length.text()=='' or ((self.filecounter>=0) & (self.t[-1]<float(self.t_length.text())) ):
                     self.filecounter=self.filecounter+1
-                    if self.filecounter>self.filenames.shape[0]-1:
-                        self.filecounter=self.filenames.shape[0]-1
+                    if self.filecounter>self.file_blocks.shape[0]-1:
+                        self.filecounter=self.file_blocks.shape[0]-1
                         print('That was it')
                         end_of_filelist_warning()  
                     self.plotwindow_length= self.t[-1] 
-                    self.plotwindow_startsecond=0
+                    self.plotwindow_startsecond=self.t[0]
                     # new file    
                     # self.filecounter=self.filecounter+1
                     read_wav()
                     plot_spectrogram()
+                    
+                    # print('hello!!!!!')
                         
                 else:    
                     self.plotwindow_length=float( self.t_length.text() )       
                     self.plotwindow_startsecond=self.plotwindow_startsecond + self.plotwindow_length
                     
-                print( [self.plotwindow_startsecond,  self.t[-1] ] )
+                print( [self.plotwindow_startsecond, self.t[0], self.t[-1] ] )      
                 
                 if self.plotwindow_startsecond > self.t[-1]:              
                     #save log
@@ -1188,16 +1324,17 @@ def start():
                         calldata=self.annotation.iloc[ix,:]
                         print(calldata)
                         savename=self.current_audiopath
-                        calldata.to_csv(savename[:-4]+'_log.csv')                  
-                        print('writing log: '+savename[:-4]+'_log.csv')
+                        nn = savename[:-4]+'_log_sec' + str(int(self.t[0])) +'_to_sec'+str(int(self.t[-1])) +'.csv'
+                        calldata.to_csv(nn)                  
+                        print('writing log: '+ nn)
                     # new file    
                     self.filecounter=self.filecounter+1
-                    if self.filecounter>=self.filenames.shape[0]-1:
-                        self.filecounter=self.filenames.shape[0]-1
+                    if self.filecounter>=self.file_blocks.shape[0]-1:
+                        self.filecounter=self.file_blocks.shape[0]-1
                         print('That was it')
                         end_of_filelist_warning()  
                     read_wav()
-                    self.plotwindow_startsecond=0
+                    self.plotwindow_startsecond=self.t[0]
                     plot_spectrogram()
                 else:
                     plot_spectrogram()
@@ -1208,14 +1345,14 @@ def start():
              if len(self.filenames)>0:   
                 print('old filecounter is: '+str(self.filecounter))
              
-                if self.t_length.text()=='' or self.t[-1]<float(self.t_length.text()):
+                if self.t_length.text()=='' or ((self.filecounter>=0) & (self.t[-1]<float(self.t_length.text())) ) :
                     self.filecounter=self.filecounter-1
                     if self.filecounter<0:
                         self.filecounter=0
                         print('That was it')
                         end_of_filelist_warning()  
                     self.plotwindow_length= self.t[-1] 
-                    self.plotwindow_startsecond=0
+                    self.plotwindow_startsecond=self.t[0]
                     # new file    
                     # self.filecounter=self.filecounter+1
                     read_wav()
@@ -1223,11 +1360,14 @@ def start():
                     
                 else:                
                     self.plotwindow_startsecond=self.plotwindow_startsecond -self.plotwindow_length
-                    print( [self.plotwindow_startsecond,  self.t[-1] ] )      
-                    if self.plotwindow_startsecond < 0: 
-                        self.plotwindow_startsecond = self.t[-1] + self.plotwindow_startsecond                
+                    print( [self.plotwindow_startsecond, self.t[0], self.t[-1] ] )      
+                    if self.plotwindow_startsecond < self.t[0] : 
+                        # self.plotwindow_startsecond=self.t[0]
+                        # if self.file_blocks.loc[self.filecounter,'start']==0:
+                        #     self.plotwindow_startsecond = self.t[-1] + self.plotwindow_startsecond                
                         # old file    
                         self.filecounter=self.filecounter-1
+                        
                         if self.filecounter<0:
                             self.filecounter=0
                             print('That was it')
@@ -1528,7 +1668,8 @@ def start():
                     if not hasattr(self, "play_obj"):
                         new_rate = 32000          
         
-                        t_limits=self.canvas.axes.get_xlim()
+                        t_limits=list(self.canvas.axes.get_xlim())
+                        t_limits=t_limits - self.file_blocks.loc[self.filecounter,'start']/self.fs
                         f_limits=list(self.canvas.axes.get_ylim())
                         if f_limits[1]>=(self.fs/2):
                             f_limits[1]= self.fs/2-10
@@ -1557,7 +1698,8 @@ def start():
                             sa.stop_all()
                         else:    
                             new_rate = 32000          
-                            t_limits=self.canvas.axes.get_xlim()
+                            t_limits=list(self.canvas.axes.get_xlim())
+                            t_limits=t_limits - self.file_blocks.loc[self.filecounter,'start']/self.fs
                             f_limits=list(self.canvas.axes.get_ylim())
                             if f_limits[1]>=(self.fs/2):
                                 f_limits[1]= self.fs/2-10
@@ -1708,12 +1850,19 @@ def start():
             autoMenu = menuBar.addMenu("Automatic detection")
             a1 =autoMenu.addAction("Shapematching on current file")
             a1.triggered.connect(automatic_detector_shapematching)
-            a2 =autoMenu.addAction("Spectrogram correlation on current file")
-            a2.triggered.connect(automatic_detector_specgram_corr)
             a3 =autoMenu.addAction("Shapematching on all files")
             a3.triggered.connect(automatic_detector_shapematching_allfiles)
+            
+            a2 =autoMenu.addAction("Spectrogram correlation on current file")
+            a2.triggered.connect(automatic_detector_specgram_corr)
+   
             a4 =autoMenu.addAction("Spectrogram correlation on all files")
             a4.triggered.connect(automatic_detector_specgram_corr_allfiles)
+            
+            a5 =autoMenu.addAction("Show regions based on threshold")
+            a5.triggered.connect(plot_spectrogram_threshold)
+            
+            
             
             quitMenu = menuBar.addAction("Quit")
             quitMenu.triggered.connect(QtWidgets.QApplication.instance().quit)
