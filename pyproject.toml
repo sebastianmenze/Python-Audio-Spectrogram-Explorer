@@ -1,0 +1,16 @@
+[project]
+name = "python-audio-spectrogram-explorer"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+ "matplotlib>=3.10.7",
+ "moviepy==1.0.3",
+ "pandas>=2.3.3",
+ "pyqt5>=5.15.11",
+ "scikit-image>=0.25.2",
+ "scipy>=1.16.3",
+ "simpleaudio>=1.0.4",
+ "soundfile>=0.13.1",
+]
