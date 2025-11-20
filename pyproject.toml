@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pase"
-version = "1.0.0"
+version = "3.1.3"
 description = "Python Audio Spectrogram Explorer (PASE) - A GUI tool for marine acoustic analysis"
 authors = [
     {name = "Sebastian Menze", email = "sebastian.menze@gmail.com"}
