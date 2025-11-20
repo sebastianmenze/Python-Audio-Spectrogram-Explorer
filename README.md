@@ -33,7 +33,7 @@ Than open a python console and start PASE with these two commands:
 
 ```python
 import pase
-pase.pase.start()
+pase.start()
 ```
 
 This program uses PyQT5 as GUI framework and numpy, scipy, pandas and matplotlib to manipulate and visualize the data. The module `simpleaudio` is used to playback sound and `moviepy` to generated videos. In case you are getting an error message due to a missing module, simply copy the module's name and install it using pip, for example `pip install simpleaudio` and `pip install soundfile`.
@@ -213,4 +213,5 @@ Example result for the shapematching:
 Example result for the spectrogram correlation:
 
 ![autodetect3](screenshots/m5.JPG)
+
 
