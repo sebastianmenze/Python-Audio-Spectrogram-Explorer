@@ -4,15 +4,16 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pase"
-version = "3.1.0"
-description = "Python Audio Spectrogram Explorer (PASE) - A GUI tool for marine acoustic analysis and annotation"
+version = "1.0.0"
+description = "Python Audio Spectrogram Explorer (PASE) - A GUI tool for marine acoustic analysis"
 authors = [
     {name = "Sebastian Menze", email = "sebastian.menze@gmail.com"}
 ]
 readme = "README.md"
 requires-python = ">=3.8"
 license = {text = "MIT"}
-keywords = ["audio", "spectrogram", "acoustics", "annotation", "marine-biology", "bioacoustics", "passive-acoustics"]
+keywords = ["audio", "spectrogram", "acoustics", "marine-biology", "bioacoustics", "passive-acoustics"]
+
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Science/Research",
@@ -48,7 +49,6 @@ dev = [
     "pytest-qt>=4.0.0",
     "black>=22.0.0",
     "flake8>=4.0.0",
-    "mypy>=0.950",
     "isort>=5.10.0",
 ]
 all = [
@@ -58,46 +58,21 @@ all = [
 [project.urls]
 Homepage = "https://github.com/sebastianmenze/pase"
 Repository = "https://github.com/sebastianmenze/pase"
-Documentation = "https://github.com/sebastianmenze/pase/blob/main/README.md"
-"Bug Tracker" = "https://github.com/sebastianmenze/pase/issues"
+Issues = "https://github.com/sebastianmenze/pase/issues"
 
 [project.scripts]
-pase = "pase:start"
+pase = "pase.pase:start"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
 
 [tool.setuptools.packages.find]
-where = ["."]
-include = ["pase*"]
-
-[tool.setuptools.package-data]
-pase = ["*.ui", "*.qrc"]
+where = ["src"]
 
 [tool.black]
 line-length = 120
-target-version = ['py38', 'py39', 'py310', 'py311', 'py312']
-exclude = '''
-/(
-    \.git
-  | \.venv
-  | build
-  | dist
-)/
-'''
+target-version = ['py38']
 
 [tool.isort]
 profile = "black"
 line_length = 120
-multi_line_output = 3
-
-[tool.pytest.ini_options]
-testpaths = ["tests"]
-python_files = ["test_*.py"]
-python_classes = ["Test*"]
-python_functions = ["test_*"]
-addopts = "--verbose"
-
-[tool.mypy]
-python_version = "3.8"
-warn_return_any = true
-warn_unused_configs = true
-disallow_untyped_defs = false
-ignore_missing_imports = true
